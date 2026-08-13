@@ -106,3 +106,15 @@ latex/*.png
 latex/*.eps
 *.pdf
 *.eps
+
+# ── Repo Pessoal ──────────────────
+CONTRIBUTING.md
+CHANGELOG.md
+Makefile
+pyproject.toml
+uv.lock
+latex/artigo
+latex/dissertacao
+latex/livro
+latex/projeto
+latex/relatorio
