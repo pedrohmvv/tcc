@@ -1,160 +1,100 @@
 #!/usr/bin/env python3
 """
-01_coleta_dados.py — Geração de Dados Fictícios para Demonstração
-=================================================================
+01_coleta_dados.py — Carregamento e validação dos dados brutos do projeto ALTA
+================================================================================
 
-Este script gera um dataset fictício de **churn de clientes** para
-servir como demonstração do pipeline completo de Ciência de Dados.
+Não corresponde a uma spec própria (ver `AGENTS.md`/`CLAUDE.md`: script 01 = "—").
+Este script NÃO gera nem transforma dados — os arquivos em `dados/brutos/` já
+existem e são imutáveis (coletados pela infraestrutura do projeto ALTA/Dharma-AI).
+A responsabilidade deste script é apenas validar que os brutos esperados estão
+presentes e com o schema mínimo, servindo de porta de entrada do pipeline.
 
-O dataset simula dados de uma empresa de telecomunicações com ~1000
-clientes, contendo variáveis numéricas e categóricas.
+Entradas:
+    dados/brutos/todos_mercados_*.csv    (produtos coletados via PDV/API)
+    dados/brutos/dicionario_canonico.csv (dicionário canônico ALTA)
+
+Saídas:
+    Nenhum arquivo novo. Loga estatísticas básicas (linhas, colunas) e falha
+    com erro claro se algum bruto esperado estiver ausente ou com schema
+    incompatível (ver `dados/brutos/README.md` e `specs/001-*/requirements.md`).
 
 Uso:
-    python scripts/01_coleta_dados.py
-
-Saída:
-    dados/brutos/dataset_clientes.csv
-
-Como adaptar para seu projeto:
-    Este é provavelmente o primeiro script que você vai modificar.
-    Substitua o corpo da função `gerar_dataset()` pela lógica de
-    obtenção dos seus dados reais. Exemplos de cenários comuns:
-
-    - Leitura de CSV local:
-        df = pd.read_csv("dados/brutos/meu_dataset.csv")
-
-    - Download de API:
-        import requests
-        response = requests.get("https://api.exemplo.com/dados")
-        df = pd.DataFrame(response.json())
-
-    - Download de base pública (Kaggle, UCI, etc.):
-        from urllib.request import urlretrieve
-        urlretrieve("https://url-do-dataset.csv", CAMINHO_SAIDA)
-
-    - Web scraping:
-        from bs4 import BeautifulSoup
-        # ... lógica de scraping
-
-    O importante é que, ao final, o script salve o arquivo em
-    `dados/brutos/` sem nenhuma transformação — os dados brutos
-    devem ser preservados exatamente como foram coletados.
+    uv run python scripts/01_coleta_dados.py
 """
 
-import os
+from __future__ import annotations
 
-import numpy as np
+import logging
+import sys
+from pathlib import Path
+
 import pandas as pd
 
-# ── Configurações ──────────────────────────────────────────────
-SEED = 42
-N_CLIENTES = 1000
-CAMINHO_SAIDA = os.path.join("dados", "brutos", "dataset_clientes.csv")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger(__name__)
 
-# ── Reprodutibilidade ─────────────────────────────────────────
-np.random.seed(SEED)
+DADOS_BRUTOS = Path("dados/brutos")
+COLUNAS_MERCADOS_MINIMAS = {"product_id", "description", "price", "source", "collected_at"}
+COLUNAS_DICIONARIO_MINIMAS = {"desc_alim", "codg_item1", "cod_padrao"}
 
 
-def gerar_dataset(n: int = N_CLIENTES) -> pd.DataFrame:
-    """Gera um DataFrame fictício de clientes com risco de churn.
+def localizar_arquivo_mercados(diretorio: Path) -> Path:
+    """Localiza o CSV de produtos coletados (nome datado, ex. todos_mercados_2026-09-10.csv)."""
+    candidatos = sorted(diretorio.glob("todos_mercados_*.csv"))
+    if not candidatos:
+        raise FileNotFoundError(
+            f"Nenhum arquivo 'todos_mercados_*.csv' encontrado em {diretorio}/. "
+            "Ver dados/brutos/README.md para a origem esperada (projeto ALTA)."
+        )
+    return candidatos[-1]
 
-    Parameters
-    ----------
-    n : int
-        Número de registros a gerar.
 
-    Returns
-    -------
-    pd.DataFrame
-        Dataset com variáveis numéricas e categóricas.
-    """
-    dados = {
-        "id_cliente": range(1, n + 1),
-        "idade": np.random.randint(18, 70, size=n),
-        "sexo": np.random.choice(["M", "F"], size=n, p=[0.48, 0.52]),
-        "renda_mensal": np.round(np.random.lognormal(mean=8.5, sigma=0.6, size=n), 2),
-        "tempo_conta_meses": np.random.randint(1, 120, size=n),
-        "num_produtos": np.random.choice([1, 2, 3, 4], size=n, p=[0.40, 0.35, 0.15, 0.10]),
-        "tem_credito": np.random.choice([0, 1], size=n, p=[0.25, 0.75]),
-        "saldo": np.round(np.random.exponential(scale=50000, size=n), 2),
-        "ativo": np.random.choice([0, 1], size=n, p=[0.12, 0.88]),
-        "canal_aquisicao": np.random.choice(
-            ["Loja Física", "Online", "Telefone", "Indicação"],
-            size=n,
-            p=[0.30, 0.40, 0.15, 0.15],
-        ),
-    }
+def validar_schema_produtos(df: pd.DataFrame, nome_arquivo: str = "produtos") -> None:
+    """Valida (em memória, sem I/O) que `df` tem o schema mínimo de produtos coletados."""
+    faltantes = COLUNAS_MERCADOS_MINIMAS - set(df.columns)
+    if faltantes:
+        raise ValueError(f"Colunas ausentes em {nome_arquivo}: {sorted(faltantes)}")
 
-    df = pd.DataFrame(dados)
 
-    # ── Variáveis com relacionamento realista ──────────────────
-    # Clientes inativos e com pouco tempo de conta tendem a
-    # registrar mais reclamações.
-    reclamacoes_base = np.random.poisson(lam=0.6, size=n)
-    df["num_reclamacoes"] = np.where(
-        (df["tempo_conta_meses"] < 12) | (df["ativo"] == 0),
-        reclamacoes_base + np.random.poisson(lam=1.5, size=n),
-        reclamacoes_base,
+def validar_schema_dicionario(df: pd.DataFrame, nome_arquivo: str = "dicionario") -> None:
+    """Valida (em memória, sem I/O) que `df` tem o schema mínimo do dicionário canônico."""
+    faltantes = COLUNAS_DICIONARIO_MINIMAS - set(df.columns)
+    if faltantes:
+        raise ValueError(f"Colunas ausentes em {nome_arquivo}: {sorted(faltantes)}")
+
+
+def validar_produtos_coletados(caminho: Path) -> pd.DataFrame:
+    """Carrega o CSV de produtos coletados e valida seu schema mínimo."""
+    df = pd.read_csv(caminho)
+    validar_schema_produtos(df, nome_arquivo=caminho.name)
+    logger.info(
+        "Produtos coletados: %s (%d linhas, %d colunas)", caminho.name, len(df), df.shape[1]
     )
-
-    # Satisfação depende inversamente das reclamações e
-    # diretamente do tempo de conta.
-    satisfacao_continua = (
-        4.5
-        - 0.6 * df["num_reclamacoes"]
-        + 0.008 * df["tempo_conta_meses"]
-        + np.random.normal(0, 0.6, size=n)
-    )
-    df["satisfacao"] = np.clip(np.round(satisfacao_continua), 1, 5).astype(int)
-
-    # ── Variável-alvo (churn) via modelo logístico ─────────────
-    # A probabilidade de churn é modelada como uma função
-    # logística (sigmóide) das variáveis preditoras, garantindo
-    # que os modelos de ML consigam aprender o padrão subjacente.
-    reclamacoes_norm = df["num_reclamacoes"] / df["num_reclamacoes"].max()
-    log_odds = (
-        -2.5  # bias
-        + 1.5 * reclamacoes_norm  # +reclamações → +churn
-        + 2.0 * (1 - df["satisfacao"] / 5)  # -satisfação → +churn
-        + 1.2 * (1 - df["tempo_conta_meses"] / 120)  # -tempo → +churn
-        + 1.0 * (1 - df["ativo"])  # inativo → +churn
-        + 0.5 * (1 - df["num_produtos"] / 4)  # -produtos → +churn
-    )
-    prob_churn = 1 / (1 + np.exp(-log_odds))
-    df["churn"] = np.random.binomial(1, prob_churn)
-
-    # ── Introduzir valores ausentes realistas (~5%) ────────────
-    idx_renda = np.random.choice(n, size=int(n * 0.05), replace=False)
-    df.loc[idx_renda, "renda_mensal"] = np.nan
-
-    idx_satisfacao = np.random.choice(n, size=int(n * 0.03), replace=False)
-    df.loc[idx_satisfacao, "satisfacao"] = np.nan
-
     return df
 
 
-def main():
-    """Ponto de entrada principal."""
-    print("=" * 60)
-    print("01 — Geração de Dados Fictícios")
-    print("=" * 60)
+def validar_dicionario_canonico(caminho: Path) -> pd.DataFrame:
+    """Carrega o CSV do dicionário canônico ALTA e valida seu schema mínimo."""
+    if not caminho.exists():
+        raise FileNotFoundError(f"Dicionário canônico não encontrado em {caminho}")
+    df = pd.read_csv(caminho, sep=";")
+    validar_schema_dicionario(df, nome_arquivo=caminho.name)
+    logger.info("Dicionário canônico: %s (%d entradas)", caminho.name, len(df))
+    return df
 
-    # Criar diretório se não existir
-    os.makedirs(os.path.dirname(CAMINHO_SAIDA), exist_ok=True)
 
-    # Gerar e salvar
-    df = gerar_dataset()
-    df.to_csv(CAMINHO_SAIDA, index=False, encoding="utf-8")
+def main() -> None:
+    if not DADOS_BRUTOS.exists():
+        logger.error("Diretório %s não existe.", DADOS_BRUTOS)
+        sys.exit(1)
 
-    print(f"\n✓ Dataset gerado com {len(df)} registros e {len(df.columns)} colunas.")
-    print(f"✓ Salvo em: {CAMINHO_SAIDA}")
-    print("\nDistribuição da variável-alvo (churn):")
-    print(df["churn"].value_counts().to_string())
-    print("\nValores ausentes:")
-    print(df.isnull().sum()[df.isnull().sum() > 0].to_string())
-    print("\nPrimeiras 5 linhas:")
-    print(df.head().to_string())
-    print("=" * 60)
+    caminho_mercados = localizar_arquivo_mercados(DADOS_BRUTOS)
+    caminho_dicionario = DADOS_BRUTOS / "dicionario_canonico.csv"
+
+    validar_produtos_coletados(caminho_mercados)
+    validar_dicionario_canonico(caminho_dicionario)
+
+    logger.info("Dados brutos validados. Próxima etapa: scripts/02_analise_exploratoria.py")
 
 
 if __name__ == "__main__":
