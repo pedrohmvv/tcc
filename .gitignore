@@ -108,13 +108,7 @@ latex/*.eps
 *.eps
 
 # ── Repo Pessoal ──────────────────
+# Makefile, pyproject.toml e uv.lock voltaram a ser rastreados: o CI
+# (.github/workflows/ci.yml) depende deles via `uv sync` e `make test`.
 CONTRIBUTING.md
 CHANGELOG.md
-Makefile
-pyproject.toml
-uv.lock
-latex/artigo
-latex/dissertacao
-latex/livro
-latex/projeto
-latex/relatorio

@@ -1,0 +1,82 @@
+# =============================================================================
+# pyproject.toml — TCC: Entity Matching em Produtos de Supermercado com SLMs
+# =============================================================================
+# Gerenciado com uv (https://docs.astral.sh/uv/). Ver AGENTS.md / CLAUDE.md.
+# =============================================================================
+
+[project]
+name = "tcc-entity-matching-produtos"
+version = "0.1.0"
+description = "TCC — Entity Matching em produtos de supermercado com Small Language Models fine-tuned (Cross-Encoder). Pipeline reprodutível com LaTeX (abntex2[article]) e Python."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.14"
+authors = [
+    { name = "Pedro Henrique Medeiros Vieira", email = "pedrohmv@academico.ufpb.br" },
+]
+keywords = ["entity-matching", "cross-encoder", "small-language-models", "lora", "fine-tuning", "latex", "reprodutibilidade", "abntex2", "abnt"]
+
+# ── Dependências ─────────────────────────────────────────────────────────────
+# Cobrem os scripts 01-04 e 06 (coleta, EDA, construção do dataset, baselines,
+# avaliação/exportação). O grupo opcional `finetuning` cobre só o script 05.
+dependencies = [
+    # Manipulação de dados
+    "pandas>=2.0",
+    "numpy>=1.24",
+    # Blocagem e baselines clássicos (spec 001/002, ADR-0006)
+    "rank-bm25>=0.2.2",
+    "rapidfuzz>=3.9",
+    "scikit-learn>=1.3",
+    # Estatística (McNemar, effect size, IC — spec 004, ADR-0008)
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    # Tracking de experimentos (spec 003) e config versionada
+    "mlflow>=2.14",
+    "pyyaml>=6.0",
+    # Visualização
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+    # Persistência e utilitários
+    "joblib>=1.3",
+    "openpyxl>=3.1",
+]
+
+# ── Dependências opcionais ───────────────────────────────────────────────────
+# Fine-tuning do Cross-Encoder (spec 003) roda na infraestrutura da Dharma-AI
+# (ADR-0003/0009) — instale localmente só se for rodar/depurar smoke tests:
+#   uv sync --extra finetuning
+[project.optional-dependencies]
+finetuning = [
+    "torch>=2.3",
+    "transformers>=4.42",
+    "peft>=0.11",
+    "accelerate>=0.31",
+    "datasets>=2.20",
+]
+
+# ── Grupos de desenvolvimento ────────────────────────────────────────────────
+[dependency-groups]
+dev = [
+    "ruff>=0.4",
+    "pytest>=8.0",
+    "mypy>=1.0",
+    "pre-commit>=3.0",
+]
+
+# ── Ferramentas ──────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+ignore_missing_imports = true
