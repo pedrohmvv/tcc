@@ -1,0 +1,16 @@
+---
+description: Convenções LaTeX ABNT do TCC
+globs: latex/**/*.tex, latex/**/*.bib
+alwaysApply: false
+---
+
+# LaTeX do TCC
+
+Único documento: `latex/tcc_artigo/` (`abntex2[article]`). Não gerar `.docx`.
+
+Antes de editar, leia e siga:
+
+- `.claude/skills/abnt-latex/SKILL.md`
+- `.claude/skills/verificacao-citacoes/SKILL.md` — obrigatória antes de qualquer entrada em `referencias.bib` ou citação nova no texto
+
+Figuras e tabelas em `figuras/` e `tabelas/` são geradas por `scripts/06_*` — não editar à mão. Compilar com `make latex DOC=tcc_artigo`.

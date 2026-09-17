@@ -1,0 +1,13 @@
+---
+description: Pipeline Python e reprodutibilidade do TCC
+globs: scripts/**/*.py, tests/**/*.py
+alwaysApply: false
+---
+
+# Pipeline Python
+
+Antes de implementar, leia a spec em `specs/` da etapa e `.claude/skills/reprodutibilidade-ml/SKILL.md`.
+
+Matching, blocagem ou avaliação: também `.claude/skills/dominio-entity-matching/SKILL.md` e, se for métrica comparativa, `.claude/skills/avaliacao-baselines/SKILL.md`.
+
+Não reabra ADR sem um ADR novo. Nomes canônicos dos scripts e I/O: `CLAUDE.md` — não o `scripts/README.md` do template. Seeds e configs versionadas em toda etapa estocástica. Split por produto canônico antes de geração/augmentation. Dataset Generator nunca toca o teste (ADR-0004).

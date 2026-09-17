@@ -1,0 +1,13 @@
+---
+description: Specs, ADRs e protocolo de anotação
+globs: specs/**/*.md, docs/adr/**/*.md, docs/protocolo_anotacao.md
+alwaysApply: false
+---
+
+# Specs e decisões
+
+Não reabra uma decisão em `docs/adr/` sem justificativa explícita e um ADR que a substitua.
+
+Dúvida de match/não-match: `docs/protocolo_anotacao.md` é a fonte — skill `.claude/skills/protocolo-anotacao-em/SKILL.md` só resume. Não inventar critério ad-hoc.
+
+Specs descrevem o que implementar; o código deve segui-las. Hub do TCC: `CLAUDE.md`.
