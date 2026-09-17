@@ -35,27 +35,3 @@ Se você precisa limpar, transformar ou filtrar dados, faça isso nos scripts e 
 | `processados/` | Dados limpos, treino/teste | ❌ (regeneráveis) | Scripts 03+ |
 
 \* Ver seção "Versionamento de Dados" no README principal.
-
----
-
-## 🔄 Fluxo dos Dados
-
-```
-              Script 01                 Script 03
-Fonte  ──────────────────►  brutos/  ──────────────────►  processados/
-(API, CSV, web scraping)     │                              │
-                             │                              ├── dataset_processado.csv
-                             │                              ├── dataset_treino.csv
-                             └── dataset_clientes.csv       └── dataset_teste.csv
-```
-
----
-
-## 📋 Para Seu Projeto
-
-Ao adaptar este repositório para seu trabalho:
-
-1. **Substitua** o dataset de demonstração em `brutos/` pelo seu dataset real
-2. **Documente** a proveniência dos dados (ver template em `brutos/README.md`)
-3. **Adapte** os scripts de pré-processamento para suas variáveis
-4. **Mantenha** a separação brutos/processados — é a base da reprodutibilidade

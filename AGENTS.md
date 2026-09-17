@@ -1,50 +1,64 @@
 # Regras e Diretrizes do Projeto (AGENTS.md)
 
-Este documento define as regras, a arquitetura e as convenções que devem ser rigorosamente seguidas por qualquer agente de IA (e desenvolvedores) que interaja com este repositório.
+Convenções de engenharia para qualquer agente ou pessoa que altere este repositório.
 
-## 1. Ferramentas e Dependências
-- **Gerenciador de Pacotes e Ambiente:** O projeto utiliza exclusivamente o `uv`.
-- **Fonte da Verdade:** Todas as dependências e configurações residem no `pyproject.toml`.
-  - **NÃO** crie nem atualize o arquivo `requirements.txt`.
-  - Para instalar/sincronizar dependências, utilize `uv sync` ou os comandos do `Makefile` (`make setup`, `make setup-dev`).
-- **Qualidade de Código:** O projeto usa o `ruff` para formatação e linting.
-  - Para checar e formatar, use `make lint` e `make format`.
-  - Estilo: aspas duplas, line-length 100, indentação com 4 espaços (definido no `pyproject.toml`).
-- **Type Checking:** Utilize type hints sistematicamente para permitir a validação estática.
+**Escopo do TCC, restrições inegociáveis, ADRs e mapeamento canônico dos scripts 01–06:** `CLAUDE.md`. Este arquivo não reabre essas decisões. Em conflito com o template legado (`scripts/README.md`, I/O de churn/`tex/`), prevalecem `CLAUDE.md` e as specs.
 
-## 2. Estrutura do Pipeline de Dados
-O pipeline metodológico em Python é estritamente sequencial, dividido em scripts numerados dentro do diretório `scripts/`. Ele deve sempre poder ser executado de ponta a ponta sem intervenção humana através de `make pipeline`.
+## 1. Ferramentas e dependências
 
-Fluxos de I/O padrão:
-1. `01_coleta_dados.py` salva em `dados/brutos/`.
-2. `02_analise_exploratoria.py` consome brutos e salva em `resultados/figuras/` e `resultados/metricas/`.
-3. `03_preprocessamento.py` consome brutos e salva dados limpos (treino, teste) em `dados/processados/`.
-4. `04_treinamento_modelo.py` consome treino e salva `.joblib` em `modelos/`.
-5. `05_avaliacao_modelo.py` carrega modelos e teste, salva métricas em `resultados/`, tabelas `.tex` em `tex/<doc>/tabelas/` e figuras (`.png`).
-6. `06_exportar_figuras_eps.py` converte automaticamente `.png` para `.eps` e as distribui para as pastas `tex/<doc>/figuras/`.
+- Gerenciador exclusivo: `uv`. Fonte da verdade: `pyproject.toml` + `uv.lock`.
+- Não criar nem atualizar `requirements.txt`.
+- Instalar: `uv sync` ou `make setup` / `make setup-dev`.
+- Lint e formatação: `ruff` via `make lint` e `make format`. Estilo: aspas duplas, line-length 100, indentação de 4 espaços (`pyproject.toml`).
+- Type hints em código novo; checagem com `make typecheck` (mypy).
+- Antes de um comando ad-hoc, verificar se o `Makefile` já cobre (`make help`).
 
-**Regra Crítica:** Nenhum script pode criar subdiretórios ou modificar a estrutura base, a não ser as saídas esperadas nas pastas de `dados/`, `modelos/`, `resultados/` e as exportações no diretório `tex/`.
+## 2. Pipeline
+
+Scripts numerados em `scripts/`, sequenciais, executáveis ponta a ponta com `make pipeline`. Cada script consome a saída do anterior.
+
+Mapeamento canônico (implementar nesta direção; ver `CLAUDE.md` e `specs/`):
+
+| Script | Spec | Saída esperada |
+|---|---|---|
+| `01_coleta_dados.py` | — | `dados/brutos/` (base ALTA + dicionário; brutos são imutáveis) |
+| `02_analise_exploratoria.py` | 001 | estatísticas em `resultados/` |
+| `03_construcao_dataset.py` | 001 | partições e candidatos em `dados/processados/` |
+| `04_baselines.py` | 002 | preditores clássicos + LLaMA zero-shot |
+| `05_finetuning.py` | 003 | LoRA do Cross-Encoder |
+| `06_avaliacao_exportacao.py` | 004 | métricas + exportação para `latex/tcc_artigo/` |
+
+Os arquivos no disco ainda podem usar nomes do template (`03_preprocessamento.py`, `04_treinamento_modelo.py`, `05_avaliacao_modelo.py`, `06_exportar_figuras_eps.py`). Isso é dívida de adaptação — não tratar esse I/O (churn, `.joblib` genérico, pasta `tex/`) como o alvo. Ao reescrever, seguir a tabela acima e a spec correspondente.
+
+Não criar subdiretórios fora das saídas esperadas em `dados/`, `modelos/`, `resultados/` e `latex/tcc_artigo/`.
 
 ## 3. Testes (`tests/`)
-Os testes são implementados utilizando `pytest` e estruturados estritamente em **3 camadas** de integração:
 
-1. **Camada 1 (Unitários Puros):** Testam a lógica do negócio, comportamentos limítrofes e funções puras (ex: sanitização, schemas padrão). Nenhum I/O de disco é permitido nesta camada (ver `test_coleta_dados.py`, `test_treinamento.py`, `test_avaliacao.py`).
-2. **Camada 2 (Transformação em Memória):** Testam as rotinas matemáticas e o pré-processamento (ex: remoção de NaNs, codificação categórica). Usam *fixtures* mockadas contidas no `conftest.py`. Sem I/O de disco (ver `test_preprocessamento.py`).
-3. **Camada 3 (Integração Leve):** Um único arquivo (`test_pipeline.py`) garante a integração End-to-End criando um diretório temporário (`tmp_path`) e executando o pipeline por completo para garantir a passagem de bastão correta dos artefatos.
+`pytest`, três camadas. Rodar com `make test` ou `uv run pytest tests/ -v`.
 
-Para rodar os testes, use `make test` ou `uv run pytest tests/ -v`.
-- **Aviso de Matplotlib:** Ao testar funções que utilizam Matplotlib/Seaborn de forma não interativa, faça mocks apropriados da GUI (ex: `matplotlib.pyplot.Figure.savefig`) ou utilize o backend `Agg` para evitar travamentos durante as execuções de testes.
+1. **Unitários puros:** lógica e bordas, sem I/O de disco.
+2. **Transformação em memória:** fixtures do `conftest.py`, sem I/O de disco.
+3. **Integração leve:** um teste de pipeline em `tmp_path` que verifica a passagem de artefatos 01→06.
 
-## 4. Integração com LaTeX
-Este projeto une Ciência de Dados (Python) e documentação acadêmica automatizada (LaTeX).
-- **Tabelas:** O script de avaliação (`05_avaliacao_modelo.py`) possui rotinas que convertem as saídas do Pandas para `strings` em LaTeX (ex: rotinas que utilizam `replace("_", r"\_")`). Nunca remova esses castings (para lidar com type hints como `Hashable`).
-- **Compilação:** A compilação é gerenciada pelo utilitário `latexmk`. Os agentes devem instruir o usuário a compilar via `make latex DOC=<tipo>`.
+Matplotlib/Seaborn em teste: backend `Agg` ou mock de `savefig`.
 
-## 5. Resumo de Comandos Relevantes (`Makefile`)
-Antes de tentar rodar comandos complexos à mão, verifique se o Makefile não já providencia uma abstração.
-- `make setup` / `make setup-dev`
-- `make pipeline` (Roda do 01 ao 06)
-- `make test`
-- `make format` / `make lint`
-- `make latex DOC=nome_do_tipo`
-- `make new-doc TYPE=novo_tipo`
+## 4. LaTeX
+
+Única saída de texto do TCC: `latex/tcc_artigo/` (`abntex2[article]`). Compilar com `make latex DOC=tcc_artigo` (`latexmk`).
+
+Figuras e tabelas em `latex/tcc_artigo/figuras/` e `tabelas/` são geradas pelo script 06 — não editar à mão. Strings LaTeX exportadas do Pandas precisam preservar escapes (`replace("_", r"\_")` e equivalentes).
+
+Não gerar `.docx` nem outros formatos para o texto final.
+
+## 5. Comandos
+
+| Comando | Efeito |
+|---|---|
+| `make setup` / `make setup-dev` | dependências (`uv`) |
+| `make pipeline` | scripts 01→06 |
+| `make latex DOC=tcc_artigo` | PDF do TCC |
+| `make check` | lint + typecheck + testes (CI) |
+| `make test` | pytest |
+| `make typecheck` | mypy |
+| `make format` / `make lint` | ruff |
+| `make clean` / `make latex-clean` | caches / auxiliares LaTeX |
