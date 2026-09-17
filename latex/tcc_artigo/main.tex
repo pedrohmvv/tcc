@@ -25,6 +25,8 @@
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{subcaption}
 \usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
 
 % Matemática
 \usepackage{amsmath}
@@ -60,356 +62,364 @@
 \setlength{\absrightindent}{0cm}
 \renewcommand{\abstracttextfont}{\normalfont\normalsize}
 
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.97,0.97,0.97}
-
-\lstdefinestyle{pythonstyle}{
-    backgroundcolor=\color{backcolour},
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{blue},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
-    breakatwhitespace=false, breaklines=true, captionpos=b,
-    keepspaces=true, numbers=left, numbersep=5pt,
-    showspaces=false, showstringspaces=false, showtabs=false,
-    tabsize=4, language=Python, frame=single, framerule=0.5pt,
-    rulecolor=\color{codegray},
-}
-\lstset{
-    style=pythonstyle,
-    inputencoding=utf8,
-    extendedchars=true,
-    literate=%
-        {á}{{á}}1 {à}{{à}}1 {â}{{â}}1 {ã}{{ã}}1 {ä}{{\"a}}1
-        {é}{{é}}1 {è}{{\`e}}1 {ê}{{ê}}1 {ë}{{\"e}}1
-        {í}{{í}}1 {ì}{{\`i}}1 {î}{{\^i}}1 {ï}{{\"i}}1
-        {ó}{{ó}}1 {ò}{{\`o}}1 {ô}{{ô}}1 {õ}{{õ}}1 {ö}{{\"o}}1
-        {ú}{{ú}}1 {ù}{{\`u}}1 {û}{{\^u}}1 {ü}{{\"u}}1
-        {ç}{{ç}}1
-        {Á}{{Á}}1 {À}{{À}}1 {Â}{{Â}}1 {Ã}{{Ã}}1 {Ä}{{\"A}}1
-        {É}{{É}}1 {È}{{\`E}}1 {Ê}{{Ê}}1 {Ë}{{\"E}}1
-        {Í}{{Í}}1 {Ì}{{\`I}}1 {Î}{{\^I}}1 {Ï}{{\"I}}1
-        {Ó}{{Ó}}1 {Ò}{{\`O}}1 {Ô}{{Ô}}1 {Õ}{{Õ}}1 {Ö}{{\"O}}1
-        {Ú}{{Ú}}1 {Ù}{{\`U}}1 {Û}{{\^U}}1 {Ü}{{\"U}}1
-        {Ç}{{Ç}}1
-}
-
 \graphicspath{{figuras/}}
 
 % ============================================================
 % METADADOS
 % ============================================================
-\titulo{%
-    \vspace*{-3.5cm}
-    \begin{minipage}{1.0\textwidth}
-        \centering
-        \includegraphics[width=0.1\textwidth]{brasao_ufpb.png}
-    \end{minipage}%
-    \vspace{0.5cm}
-    \begin{minipage}{1.0\textwidth}
-        \centering
-        \normalsize
-        \textbf{UNIVERSIDADE FEDERAL DA PARAÍBA -- UFPB} \\
-        \textbf{CENTRO DE CIÊNCIAS SOCIAIS APLICADAS -- CCSA} \\
-        \textbf{PROGRAMA DE PÓS-GRADUAÇÃO EM CIÊNCIA DE DADOS}
-    \end{minipage}%
-    \vspace{1cm}
-    \Large \textbf{Métodos Avançados de Aprendizado de Máquina para Previsão de Evasão de Clientes: Um Estudo Comparativo com Dados do Setor de Telecomunicações Brasileiro}
-}
-\providecommand{\theforeigntitle}{}
+\titulo{ENTITY MATCHING EM PRODUTOS DE SUPERMERCADO COM SMALL LANGUAGE MODELS FINE-TUNED}
 
-\autor{
-    \textbf{Nome do Aluno(a)} \\
-    \small \texttt{email.do.aluno@academico.ufpb.br} \\
-    \vspace{0.5cm} \\
-    Orientador: Prof. Dr. Nome do Orientador(a) \\
-    \small \texttt{email.do.orientador@ufpb.br}
+\autor{Pedro Henrique Medeiros Vieira}
+
+\instituicao{%
+    \textbf{Universidade Federal da Paraíba} \\
+    Centro de Ciências Sociais Aplicadas \\
+    Curso de Ciência de Dados para Negócios
 }
 
-\data{\today}
+\preambulo{Proposta de Trabalho de Conclusão de Curso apresentada ao Curso de Ciência de Dados para Negócios da Universidade Federal da Paraíba, como requisito parcial da disciplina Projeto em Ciência de Dados I, na modalidade Artigo Científico.}
+
+\orientador[Orientador:]{Prof. Hilton Martins de Brito Ramalho}
+
+\local{João Pessoa -- PB}
+\data{2026}
 
 \begin{document}
 
 \pretextual
-\maketitle
+\imprimirfolhaderosto
 \newpage
 
 % ============================================================
 % RESUMO
 % ============================================================
 \begin{resumo}
-
-\begin{dica}
-\noindent\textbf{Dica ao autor — Como escrever o Resumo:}
-
-O resumo é o ``cartão de visitas'' do seu trabalho. Muitos avaliadores decidem a qualidade do trabalho a partir dele. Siga a estrutura \textbf{IMRAD}: (1)~\textbf{Contexto}: Qual é o problema? (1-2 frases); (2)~\textbf{Objetivo}: O que o trabalho faz? (1 frase); (3)~\textbf{Método}: Como foi feito? (1-2 frases); (4)~\textbf{Resultados}: O que foi encontrado? (1-2 frases, \textbf{com números!}); (5)~\textbf{Conclusão}: Qual a contribuição? (1 frase). Tamanho recomendado: 150 a 250 palavras para artigos e TCCs. Escreva o resumo \textbf{por último}, quando todo o trabalho estiver pronto. Escolha 3 a 5 palavras-chave que representem os conceitos centrais, separadas por ponto final, em ordem alfabética ou de relevância.
-\end{dica}
-
-\noindent Este trabalho investiga a aplicação de técnicas de \textit{Machine Learning} para a previsão de \textit{churn} de clientes no setor de telecomunicações. Foram comparados três modelos preditivos --- Regressão Logística, \textit{Random Forest} e \textit{LightGBM} --- utilizando um pipeline reprodutível de Ciência de Dados. Os resultados obtidos demonstram que o modelo \textit{LightGBM} apresentou desempenho superior, alcançando AUC-ROC de 0,877 e acurácia de 82,5\%. O estudo contribui para a literatura ao fornecer uma abordagem comparativa sistematizada e um repositório reprodutível que pode ser utilizado como referência metodológica para trabalhos de conclusão de curso.
+% \begin{dica}
+% \noindent\textbf{Dica ao autor — Como escrever o Resumo:}
+%
+% O resumo é o ``cartão de visitas'' do seu trabalho. Muitos avaliadores decidem a qualidade do trabalho a partir dele. Siga a estrutura \textbf{IMRAD}: (1)~\textbf{Contexto}: Qual é o problema? (1-2 frases); (2)~\textbf{Objetivo}: O que o trabalho faz? (1 frase); (3)~\textbf{Método}: Como foi feito? (1-2 frases); (4)~\textbf{Resultados}: O que foi encontrado? (1-2 frases, \textbf{com números!}); (5)~\textbf{Conclusão}: Qual a contribuição? (1 frase). Tamanho recomendado: 150 a 250 palavras para artigos e TCCs. Escreva o resumo \textbf{por último}, quando todo o trabalho estiver pronto. Escolha 3 a 5 palavras-chave que representem os conceitos centrais, separadas por ponto final, em ordem alfabética ou de relevância.
+% \end{dica}
+\noindent O monitoramento de preços de produtos de supermercado no Nordeste brasileiro, conduzido pelo projeto ALTA (CNPq), enfrenta um problema central de Entity Matching (EM): o mesmo produto físico é descrito com nomes heterogêneos entre diferentes sistemas de ponto de venda (PDV), dificultando sua comparação e análise. Este trabalho propõe investigar o fine-tuning de um Small Language Model (SLM) --- tendo o LLaMA 3.2 3B como candidato principal --- para a tarefa de Entity Matching de produtos, sob a formulação de Cross-Encoder, comparando seu desempenho a métodos tradicionais de similaridade textual e ao mesmo modelo sem especialização (zero-shot). Dada a inexistência de ground truth anotado, a metodologia propõe a construção de um conjunto de treino assistido por ferramenta de geração de dados sintéticos e de um conjunto de teste padrão-ouro anotado manualmente, de forma independente, sobre dados reais do projeto ALTA, evitando circularidade na avaliação. O trabalho concentra-se na subtarefa de matching catálogo--dicionário, com validação suplementar da generalização a matching intra-base. Pretende-se contribuir tanto para a infraestrutura analítica do projeto ALTA quanto para a literatura de Entity Matching de baixo recurso em língua portuguesa, lacuna ainda pouco explorada, com potencial de submissão a conferência científica nacional.
 \newline
-\noindent \textbf{Palavras-chave:} Ciência de Dados. \textit{Machine Learning}. Previsão de \textit{Churn}. Classificação Binária. Reprodutibilidade.
+\noindent \textbf{Palavras-chave:} Entity Matching. Small Language Models. Fine-tuning. Produtos de Supermercado. Processamento de Linguagem Natural.
 \end{resumo}
 
 \begin{otherlanguage*}{english}
 \begin{resumo}[Abstract]
-\noindent This study investigates the application of Machine Learning techniques for customer churn prediction in the telecommunications sector. Three predictive models were compared --- Logistic Regression, Random Forest, and LightGBM --- using a reproducible Data Science pipeline. The results demonstrate that the LightGBM model achieved superior performance, reaching an AUC-ROC of 0.877 and accuracy of 82.5\%. This study contributes to the literature by providing a systematized comparative approach and a reproducible repository.
+\noindent Price monitoring of supermarket products in Northeastern Brazil, conducted by the ALTA project (CNPq), faces a central Entity Matching (EM) problem: the same physical product is described with heterogeneous names across different point-of-sale (POS) systems, hindering comparison and analysis. This work proposes investigating the fine-tuning of a Small Language Model (SLM) --- with LLaMA 3.2 3B as the primary candidate --- for the product Entity Matching task, under a Cross-Encoder formulation, comparing its performance to traditional text similarity methods and to the same non-specialized (zero-shot) model. Given the absence of annotated ground truth, the methodology proposes building a training set assisted by a synthetic data generation tool and an independently, manually annotated gold-standard test set over real ALTA project data, avoiding evaluation circularity. The work focuses on the catalog-dictionary matching subtask, with supplementary validation of generalization to intra-base matching. It aims to contribute both to the ALTA project's analytical infrastructure and to the still underexplored literature on low-resource Entity Matching in Portuguese, with potential for submission to a national scientific conference.
 \newline
-\noindent \textbf{Keywords:} Data Science. Machine Learning. Churn Prediction. Binary Classification. Reproducibility.
+\noindent \textbf{Keywords:} Entity Matching. Small Language Models. Fine-tuning. Supermarket Products. Natural Language Processing.
 \end{resumo}
 \end{otherlanguage*}
 \newpage
 
 % ============================================================
-% 1. INTRODUÇÃO
+% LISTA DE ABREVIATURAS E SIGLAS
+% ============================================================
+\begin{siglas}
+\symboldef{EM}{Entity Matching}
+\symboldef{SLM}{Small Language Model}
+\symboldef{LLM}{Large Language Model}
+\symboldef{PLM}{Pre-trained Language Model (Modelo de Linguagem Pré-treinado)}
+\symboldef{PDV}{Ponto de Venda}
+\symboldef{PLN}{Processamento de Linguagem Natural}
+\symboldef{LoRA}{Low-Rank Adaptation}
+\symboldef{QLoRA}{Quantized Low-Rank Adaptation}
+\symboldef{ANN}{Approximate Nearest Neighbor}
+\symboldef{MRR}{Mean Reciprocal Rank}
+\symboldef{NDCG}{Normalized Discounted Cumulative Gain}
+\symboldef{MAP}{Mean Average Precision}
+\symboldef{TF-IDF}{Term Frequency -- Inverse Document Frequency}
+\symboldef{BM25}{Best Matching 25}
+\symboldef{VRAM}{Video Random Access Memory}
+\symboldef{GPU}{Graphics Processing Unit}
+\symboldef{ABNT}{Associação Brasileira de Normas Técnicas}
+\symboldef{CNPq}{Conselho Nacional de Desenvolvimento Científico e Tecnológico}
+\symboldef{TCC}{Trabalho de Conclusão de Curso}
+\symboldef{WDC}{Web Data Commons}
+\end{siglas}
+
+% ============================================================
+% 1. INTRODUÇÃO E CONTEXTUALIZAÇÃO
 % ============================================================
 \textual
 
-\section{Introdução}
+\section{Introdução e Contextualização}
 
-\begin{dica}
-\noindent\textbf{Dica ao autor — Como escrever a Introdução:}
+% \begin{dica}
+% \noindent\textbf{Dica ao autor — Como escrever a Introdução:}
+%
+% A introdução funciona como um \textbf{funil}: começa ampla (contexto geral do tema) e vai estreitando até o problema específico. Ela deve responder a seis perguntas:
+% \begin{enumerate}
+%     \item \textbf{Qual é o tema?} — Contextualize em 1-2 parágrafos, situando o leitor.
+%     \item \textbf{Por que é importante?} — Apresente a relevância com dados ou referências.
+%     \item \textbf{O que ainda não sabemos?} — Identifique a lacuna (\textit{gap}) na literatura.
+%     \item \textbf{O que este trabalho faz?} — Formule o objetivo geral de forma clara.
+%     \item \textbf{Quais são os objetivos específicos?} — Liste de forma mensurável (verbos de ação).
+%     \item \textbf{Como o texto está organizado?} — Descreva brevemente as seções seguintes.
+% \end{enumerate}
+% \textbf{Erro comum:} Começar com a definição do termo central (``\textit{Machine Learning} é uma subárea da IA que...''). Isso pertence à Fundamentação Teórica, não à Introdução. Aqui, \textbf{contextualize o problema}. Tamanho recomendado: 2-3 páginas (artigo/TCC artigo).
+% \end{dica}
+%
+% \begin{dica}
+% \noindent\textbf{Dica ao autor:} Equações numeradas devem ser utilizadas com parcimônia, apenas para conceitos verdadeiramente centrais. Use \texttt{\textbackslash begin\{equation\}} para equações que você referenciará ao longo do texto e \texttt{\textbackslash (\textbackslash)} para fórmulas breves no fluxo do parágrafo.
+% \end{dica}
 
-A introdução funciona como um \textbf{funil}: começa ampla (contexto geral do tema) e vai estreitando até o problema específico. Ela deve responder a seis perguntas:
-\begin{enumerate}
-    \item \textbf{Qual é o tema?} — Contextualize em 1-2 parágrafos, situando o leitor.
-    \item \textbf{Por que é importante?} — Apresente a relevância com dados ou referências.
-    \item \textbf{O que ainda não sabemos?} — Identifique a lacuna (\textit{gap}) na literatura.
-    \item \textbf{O que este trabalho faz?} — Formule o objetivo geral de forma clara.
-    \item \textbf{Quais são os objetivos específicos?} — Liste de forma mensurável (verbos de ação).
-    \item \textbf{Como o texto está organizado?} — Descreva brevemente as seções seguintes.
-\end{enumerate}
-\textbf{Erro comum:} Começar com a definição do termo central (``\textit{Machine Learning} é uma subárea da IA que...''). Isso pertence à Fundamentação Teórica, não à Introdução. Aqui, \textbf{contextualize o problema}. Tamanho recomendado: 2-3 páginas (artigo/TCC artigo).
-\end{dica}
+O projeto ALTA, vinculado ao CNPq e voltado ao monitoramento de preços de produtos em supermercados dos estados do Nordeste brasileiro (Paraíba, Ceará e Piauí), coleta dados de preços de forma contínua e automatizada. A base resultante contém registros de produtos provenientes de múltiplos estabelecimentos comerciais, cada um com seu próprio sistema de ponto de venda (PDV) e convenções internas de nomenclatura.
 
-A retenção de clientes é um dos principais desafios enfrentados pelas empresas de telecomunicações no cenário competitivo atual. O fenômeno do \textit{churn}\footnote{O termo \textit{churn} , ou evasão de clientes, representa a taxa de cancelamento de serviços por parte dos assinantes. É uma métrica crítica em negócios baseados em assinatura, pois o custo de adquirir um novo cliente pode ser até sete vezes maior que o de reter um existente.}, ou evasão de clientes, representa uma perda significativa de receita, sendo que o custo de aquisição de novos clientes é estimado em cinco a sete vezes maior do que o custo de retenção \cite{provost2013}.
+O problema central que motiva este trabalho é o de Entity Matching (EM): o mesmo produto físico aparece descrito com nomes radicalmente distintos entre diferentes supermercados. Para que os dados coletados sejam comparáveis e analiticamente úteis, é necessário identificar correspondências entre essas descrições heterogêneas e mapeá-las a um dicionário canônico de produtos mantido pelos pesquisadores do projeto.
 
-Neste contexto, a Ciência de Dados oferece ferramentas poderosas para a identificação precoce de clientes com alto risco de \textit{churn}, permitindo que as empresas adotem estratégias proativas de retenção. A Equação~\ref{eq:churn_rate} apresenta o cálculo formal da taxa de \textit{churn}, uma métrica fundamental para mensurar o fenômeno:
+Este problema se desdobra em duas subtarefas complementares. A primeira, matching entre a própria base, consiste em identificar que dois registros internos se referem ao mesmo produto físico. A segunda, matching catálogo--dicionário, consiste em mapear um produto da base coletada à sua entrada correspondente no dicionário canônico, composto por aproximadamente 1.500 entradas estruturadas.
 
-\begin{equation}
-    \text{Churn Rate} = \frac{\text{Clientes Cancelados no Período}}{\text{Total de Clientes no Início do Período}} \times 100
-    \label{eq:churn_rate}
-\end{equation}
+A natureza do problema impõe desafios que tornam abordagens clássicas insuficientes:
 
-\begin{dica}
-\noindent\textbf{Dica ao autor:} Equações numeradas devem ser utilizadas com parcimônia, apenas para conceitos verdadeiramente centrais. Use \texttt{\textbackslash begin\{equation\}} para equações que você referenciará ao longo do texto e \texttt{\textbackslash (\textbackslash)} para fórmulas breves no fluxo do parágrafo.
-\end{dica}
+\begin{itemize}
+    \item Abreviações e truncamentos inconsistentes originados nos sistemas de PDV;
+    \item Inversão na ordem dos tokens descritivos;
+    \item Representações alternativas de unidades de medida (por exemplo, 1L vs. 1000ML vs. 0,9L);
+    \item Variação de granularidade descritiva entre lojas;
+    \item Marcas e variantes regionais com baixa representação em corpora genéricos;
+    \item Ruído tipográfico introduzido pelos sistemas de digitação dos PDVs.
+\end{itemize}
 
-Conforme destacado por \citeonline{hastie2009}, a aplicação de técnicas supervisionadas de aprendizado de máquina em problemas de classificação binária tem se mostrado eficaz na previsão de comportamentos de cancelamento. O presente trabalho adota essa premissa como ponto de partida metodológico.
+A Tabela~\ref{tab:heterogeneidade} ilustra a heterogeneidade real dos dados.
 
-\subsection{Objetivos}
+\input{tabelas/tab_heterogeneidade_exemplos}
 
-O objetivo geral deste trabalho é desenvolver e comparar modelos de \textit{Machine Learning} para a previsão de \textit{churn} de clientes em telecomunicações, com ênfase na reprodutibilidade dos resultados.
+Métodos tradicionais de comparação de strings --- TF-IDF, BM25, Levenshtein, Jaccard --- e embeddings semânticos genéricos sem especialização de domínio foram analisados e mostram-se insuficientes para este problema, em razão da intensidade e da especificidade do ruído presente. [resultado sumário dessa análise a inserir durante a execução (Seção~\ref{sec:baselines-avaliacao}), conforme apontado no parecer de avaliação de TCC I --- a afirmação acima já é sustentada por análise preliminar, cujos números serão reportados aqui assim que consolidados.] Esses métodos serão mantidos no projeto como baselines obrigatórios para comparação experimental.
 
-Como objetivos específicos, busca-se: (i) realizar análise exploratória dos dados de clientes; (ii) aplicar técnicas de pré-processamento e engenharia de \textit{features}; (iii) treinar e validar modelos de Regressão Logística, \textit{Random Forest} e \textit{LightGBM}; e (iv) comparar o desempenho dos modelos utilizando métricas adequadas.
+\subsection{Delimitação do escopo}
+\label{sec:delimitacao-escopo}
 
-% ============================================================
-% 2. FUNDAMENTAÇÃO TEÓRICA
-% ============================================================
-\section{Fundamentação Teórica}
+Este trabalho concentra-se na subtarefa de matching catálogo--dicionário: mapear um produto da base coletada à sua entrada correspondente no dicionário canônico. A subtarefa de matching intra-base (identificar o mesmo produto entre lojas distintas) é resolvida como consequência lógica da primeira: se dois produtos de lojas diferentes são mapeados à mesma entrada canônica, eles são transitivamente o mesmo produto, sem exigir um pipeline de matching separado. Essa inferência transitiva, no entanto, herda o erro de cada matching individual --- se o modelo erra o mapeamento de um dos dois produtos ao dicionário, o match inferido entre eles herda esse erro, uma limitação reconhecida desde já.
 
-\begin{dica}
-\noindent\textbf{Dica ao autor — Como escrever a Fundamentação Teórica:}
-
-Esta seção demonstra que você \textbf{domina} o assunto. Mas dominar não é listar --- é \textbf{sintetizar criticamente}. Organize por \textbf{eixos temáticos} (não por autor). Por exemplo: primeiro defina os conceitos gerais (aprendizado supervisionado), depois os modelos específicos (Regressão Logística, RF, LightGBM), e finalmente as métricas de avaliação.
-
-\textbf{O que NÃO fazer} (colagem de citações): ``Segundo Silva (2020), X. De acordo com Santos (2021), X. Para Oliveira (2022), X.'' ← Isso é um catálogo.
-
-\textbf{O que FAZER} (síntese): ``A definição de X evoluiu. Enquanto Silva (2020) enfatiza A, Santos (2021) amplia ao incluir B. Oliveira (2022) propõe uma integração de ambos, argumentando que C.'' ← Aqui você compara, conecta e avalia.
-
-Inclua uma subseção de \textbf{Trabalhos Correlatos}: o que já foi feito de similar? Quais resultados obtiveram? \textbf{Como seu trabalho se diferencia?} Use \texttt{\textbackslash citeonline\{\}} quando o autor é sujeito da frase; \texttt{\textbackslash cite\{\}} para citações indiretas ao final do período.
-\end{dica}
-
-\subsection{Modelos de Classificação Supervisionada}
-
-Segundo \citeonline{hastie2009}, os métodos de classificação supervisionada buscam encontrar uma função que mapeie as variáveis preditoras $\mathbf{X} \in \mathbb{R}^p$ à variável-alvo $Y \in \{0,1\}$, minimizando uma função de perda definida. Formalmente, dado um conjunto de treinamento $\{(\mathbf{x}_i, y_i)\}_{i=1}^n$, o objetivo é aprender uma função $f: \mathbb{R}^p \to \{0,1\}$ que generalize bem para novos dados. Este problema pode ser expresso pela Equação~\ref{eq:risco_empirico}:
-
-\begin{equation}
-    \hat{f} = \arg\min_{f \in \mathcal{F}} \frac{1}{n} \sum_{i=1}^{n} L(y_i, f(\mathbf{x}_i))
-    \label{eq:risco_empirico}
-\end{equation}
-
-onde $L(\cdot)$ é a função de perda (por exemplo, perda logística) e $\mathcal{F}$ é o espaço de hipóteses.
-
-De forma complementar, estudos recentes~\cite{pecanha2024} destacam que a escolha do modelo deve considerar o \textit{trade-off} entre viés e variância, sendo recomendável testar múltiplos algoritmos antes de selecionar o mais adequado.
-
-\subsection{Regressão Logística}
-
-A Regressão Logística modela a probabilidade de pertencimento a uma classe por meio da função sigmoide, conforme a Equação~\ref{eq:logistic}:
-
-\begin{equation}
-    P(Y = 1 \mid \mathbf{X}) = \frac{1}{1 + e^{-(\beta_0 + \boldsymbol{\beta}^T \mathbf{X})}}
-    \label{eq:logistic}
-\end{equation}
-
-Para aprofundamento, \citeonline{james2023} oferecem uma excelente exposição sobre o tema, incluindo aspectos de interpretação dos coeficientes e diagnóstico do modelo. A Tabela~\ref{tab:coeficientes} (gerada automaticamente pelo pipeline) ilustra os coeficientes estimados.
-
-\input{tabelas/tab_coeficientes_modelo}
-
-\begin{dica}
-\noindent\textbf{Dica ao autor:} As tabelas geradas pelos scripts Python são salvas em \texttt{latex/tabelas/} e importadas com \texttt{\textbackslash input\{../tabelas/nome\}}. Isso garante que, ao reexecutar o pipeline, os dados da tabela sejam atualizados sem que você precise editá-los manualmente.
-\end{dica}
-
-\subsection{Random Forest}
-
-O algoritmo \textit{Random Forest}, proposto por \citeonline{breiman2001}, constrói um conjunto de árvores de decisão a partir de amostras \textit{bootstrap} dos dados, selecionando um subconjunto aleatório de preditoras em cada divisão. A predição final é obtida por votação majoritária entre as árvores.
-
-A importância de cada \textit{feature} pode ser medida pelo decréscimo médio de impureza, conforme ilustrado na Figura~\ref{fig:importancia}, que foi gerada automaticamente pelo script 05 de avaliação.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.75\textwidth]{importancia_features.eps}
-    \caption{Importância das \textit{features} no modelo \textit{LightGBM}.}
-    \label{fig:importancia}
-    \small \textit{Fonte: Elaborado pelo autor (\the\year).}
-\end{figure}
-
-\begin{dica}
-\noindent\textbf{Dica ao autor:} Sempre referencie as figuras no texto antes de apresentá-las. Use \texttt{\textbackslash label\allowbreak \{fig:nome\}} e \texttt{\textbackslash ref\{fig:nome\}} para referência cruzada. O prefixo \texttt{fig:} ajuda a organizar as labels. Para figuras geradas pela pipeline, os arquivos \texttt{.eps} estão em \texttt{latex/figuras/}.
-\end{dica}
-
-\subsection{Gradient Boosting e LightGBM}
-
-Os métodos de \textit{boosting} representam uma família de algoritmos de \textit{ensemble} que combinam modelos fracos sequencialmente, corrigindo os erros dos modelos anteriores. O \textit{LightGBM}~\cite{ke2017lightgbm} introduz duas otimizações significativas: amostragem baseada em gradiente (\textit{GOSS}) e agrupamento exclusivo de \textit{features} (\textit{EFB}).
-
-\subsection{Métricas de Avaliação}
-
-Para problemas de classificação binária com desbalanceamento de classes, a acurácia isolada pode ser enganosa \cite{geron2022}. A Tabela~\ref{tab:comparacao} apresenta as principais métricas.
-
-\input{tabelas/tab_comparacao_modelos}
-
-\input{tabelas/tab_matriz_confusao}
-
-\subsection{Trabalhos Correlatos}
-
-Em estudo recente, \citeonline{fernandes2023} aplicaram técnicas de \textit{Machine Learning} em dados reais de operadoras brasileiras, obtendo AUC-ROC de 0,89 com \textit{LightGBM}. Os autores destacaram a importância do tratamento de dados desbalanceados para o desempenho final. De forma complementar, \citeonline{lima2024} propuseram um framework de reprodutibilidade que permite rastrear cada etapa da pipeline desde a coleta até a publicação dos resultados.
+Como a formulação de Cross-Encoder adotada (Seção~\ref{sec:formulacao-modelo}) classifica pares de descrições independentemente de sua origem --- canônica ou bruta ---, o mesmo modelo treinado é aplicável tanto a pares (produto, entrada canônica) quanto a pares (produto, produto), sem necessidade de retreinamento. Para validar empiricamente essa generalização, uma fatia suplementar de aproximadamente 50 a 100 pares produto--produto (sem intermediação do dicionário) compõe o conjunto de teste, extraída do mesmo esforço de anotação descrito na Seção~\ref{sec:construcao-dataset}.
 
 % ============================================================
-% 3. METODOLOGIA
+% 2. REVISÃO DE LITERATURA
+% ============================================================
+\section{Revisão de Literatura}
+
+% \begin{dica}
+% \noindent\textbf{Dica ao autor — Como escrever a Fundamentação Teórica:}
+%
+% Esta seção demonstra que você \textbf{domina} o assunto. Mas dominar não é listar --- é \textbf{sintetizar criticamente}. Organize por \textbf{eixos temáticos} (não por autor). Por exemplo: primeiro defina os conceitos gerais (aprendizado supervisionado), depois os modelos específicos (Regressão Logística, RF, LightGBM), e finalmente as métricas de avaliação.
+%
+% \textbf{O que NÃO fazer} (colagem de citações): ``Segundo Silva (2020), X. De acordo com Santos (2021), X. Para Oliveira (2022), X.'' ← Isso é um catálogo.
+%
+% \textbf{O que FAZER} (síntese): ``A definição de X evoluiu. Enquanto Silva (2020) enfatiza A, Santos (2021) amplia ao incluir B. Oliveira (2022) propõe uma integração de ambos, argumentando que C.'' ← Aqui você compara, conecta e avalia.
+%
+% Inclua uma subseção de \textbf{Trabalhos Correlatos}: o que já foi feito de similar? Quais resultados obtiveram? \textbf{Como seu trabalho se diferencia?} Use \texttt{\textbackslash citeonline\{\}} quando o autor é sujeito da frase; \texttt{\textbackslash cite\{\}} para citações indiretas ao final do período.
+% \end{dica}
+
+A tarefa de Entity Matching (EM) --- também referida como resolução de entidades ou vinculação de registros --- consiste em decidir se duas descrições referem-se à mesma entidade do mundo real, e constitui etapa central em pipelines de integração de dados. \citeonline{mudgal2018} exploraram sistematicamente o espaço de projeto de arquiteturas de aprendizado profundo para EM, no trabalho que originou o sistema DeepMatcher, demonstrando que abordagens neurais são particularmente eficazes para atributos textuais heterogêneos mal atendidos por funções simples de similaridade de strings --- precisamente o regime de ruído observado em dados de PDV. Ainda assim, esses métodos dependem de grandes volumes de dados rotulados e de representações treinadas do zero para cada conjunto de dados.
+
+A adoção de modelos de linguagem pré-treinados (PLMs) baseados em transformers marcou a transição seguinte. \citeonline{brunner2020} compararam empiricamente arquiteturas transformer e transfer learning na tarefa de EM, mostrando que as arquiteturas transformer superam métodos clássicos de aprendizado profundo por uma margem média de 27,5\%. Esse avanço foi consolidado pelo sistema Ditto: \citeonline{li2020} formularam o EM como classificação de pares de sequências sobre PLMs, com três otimizações --- injeção de conhecimento de domínio, sumarização de sequências longas e aumentação de dados. Os autores reportaram ganhos de até 29\% em F1 sobre o estado da arte anterior, além de atingir resultados equivalentes com metade dos dados rotulados --- resultado diretamente relevante ao cenário de rótulos escassos deste trabalho. No domínio específico de produtos, \citeonline{peeters2021} propuseram o fine-tuning de BERT com objetivo duplo para EM --- que combina a classificação binária de match com uma tarefa auxiliar de identificação da entidade real subjacente a cada registro, favorecendo representações mais discriminativas --- e, posteriormente, \citeonline{peeters2022} propuseram o aprendizado contrastivo supervisionado para product matching, trabalho que fundamenta tecnicamente a via de bi-encoder considerada como extensão futura. Em direção complementar, \citeonline{wang2023sudowoodo} propuseram o Sudowoodo, método de aprendizado contrastivo auto-supervisionado de propósito múltiplo para integração e preparação de dados, reduzindo ainda mais a dependência de pares rotulados ao explorar sinais extraídos dos próprios dados não rotulados.
+
+A abordagem por bi-encoder remonta ao Sentence-BERT: \citeonline{reimers2019} propuseram uma modificação da rede BERT com estruturas siamesas e de tripla para derivar embeddings de sentença semanticamente significativos, comparáveis por similaridade de cosseno, reduzindo o custo de encontrar o par mais similar de 65 horas para cerca de 5 segundos. Essa propriedade de escalabilidade é o que torna a geração de candidatos por busca de vizinhos aproximados (ANN) viável sobre milhares de produtos.
+
+Mais recentemente, modelos de linguagem generativos deslocaram a fronteira. \citeonline{peeters2023} avaliaram o ChatGPT em EM sobre dados de produtos, encontrando desempenho geralmente inferior ao de um RoBERTa com fine-tuning, mas com a vantagem de dispensar treinamento adicional e de generalizar para dados não vistos. A investigação direta do fine-tuning de LLMs generativos para EM foi conduzida por \citeonline{steiner2025}, que analisaram o processo em duas dimensões: a representação dos exemplos de treino --- com adição de explicações geradas por LLM --- e a seleção e geração desses exemplos. Este é o trabalho de referência mais próximo da abordagem aqui proposta, ainda que conduzido sobre benchmarks em inglês e sem o perfil de ruído de sistemas de PDV. Como recurso de avaliação, \citeonline{peeters2024wdc} introduziram o WDC Products, um benchmark multidimensional de product matching.
+
+Dois eixos delimitam a lacuna que este trabalho ocupa. O primeiro é o de baixo recurso: \citeonline{kasai2019} observam que, embora métodos de aprendizado profundo atinjam desempenho estado da arte sobre dados de benchmark, eles requerem grandes volumes de dados rotulados, tipicamente indisponíveis em aplicações reais de resolução de entidades, e propõem combinar transfer learning e active learning para mitigar essa dependência. A ausência total de ground truth anotado no projeto ALTA situa este trabalho exatamente nesse regime --- mais severo, inclusive, por partir de zero rótulos. Em direção complementar, \citeonline{tu2022} propuseram um método de adaptação de domínio para resolução de entidades profunda, investigando se um modelo treinado sobre um domínio de origem bem rotulado pode ser adaptado a um domínio-alvo com poucos ou nenhum rótulo --- cenário estruturalmente próximo ao deste trabalho, em que o domínio de produtos de supermercado em português carece de rótulos nativos. Ferramentas clássicas de gerência de EM, como o Magellan \cite{konda2016}, consolidaram o pipeline canônico de blocagem seguida de matching que ainda estrutura o campo e informa a etapa de geração de candidatos aqui adotada.
+
+O segundo eixo é linguístico e de domínio. A literatura de EM concentra-se predominantemente em dados em inglês, com benchmarks consolidados (WDC Products, Amazon-Google, DBLP-ACM). Para o português brasileiro, o trabalho mais próximo identificado trata de tarefa correlata, porém distinta: \citeonline{silva2021} aplicaram Named Entity Recognition a títulos de produtos do maior e-commerce de varejo brasileiro, concluindo que um pipeline clássico de aprendizado de máquina ainda se mostra mais útil que grandes modelos pré-treinados quando se consideram throughput e eficiência. Trata-se, contudo, de extração de atributos (NER), e não de matching de entidades (EM), e sobre dados de e-commerce, não de PDV de supermercado. Não foi identificado trabalho de EM de produtos de supermercado em português brasileiro com o perfil de ruído de sistemas de PDV --- lacuna que justifica a contribuição central desta proposta.
+
+% ============================================================
+% 3. OBJETIVOS
+% ============================================================
+\section{Objetivos}
+
+\subsection{Objetivo Geral}
+
+Desenvolver e avaliar um sistema de Entity Matching para produtos de supermercado baseado no fine-tuning supervisionado de um Small Language Model (SLM), investigando se um modelo especializado no domínio supera métodos tradicionais e modelos genéricos no problema de correspondência de produtos em dados reais do projeto ALTA/CNPq.
+
+\subsection{Objetivos Específicos}
+\label{sec:objetivos-especificos}
+
+\begin{itemize}
+    \item Construir um conjunto de dados rotulado de pares de produtos (match / não-match) a partir dos dados reais do projeto, combinando geração de dados de treino assistida por ferramenta, supervisão distante via dicionário canônico e um conjunto de teste padrão-ouro anotado manualmente;
+    \item Implementar e avaliar um conjunto de baselines clássicos (TF-IDF, BM25, Levenshtein, Jaccard e embeddings genéricos) como referência comparativa;
+    \item Investigar um pipeline progressivo que reserve métodos de menor custo computacional para os casos triviais e o modelo especializado para os casos difíceis;
+    \item Realizar o fine-tuning de um SLM (tendo LLaMA 3.2 3B como candidato principal) para a tarefa de Entity Matching no domínio-alvo, sob a formulação de Cross-Encoder (classificação de pares);
+    \item Avaliar o modelo com métricas adequadas ao problema: Precision, Recall e F1 para classificação binária, além de MRR e Recall@K para a tarefa de ranqueamento de candidatos;
+    \item Conduzir experimentos de ablação para isolar as contribuições individuais das decisões metodológicas relevantes (por exemplo, aumentação de dados e mineração de negativos difíceis --- pares não-match textualmente muito similares, como mesma categoria de produto com marcas diferentes, mais informativos ao treino do que negativos amostrados aleatoriamente);
+    \item Conduzir análise de erro qualitativa, categorizando as falhas por tipo de ruído (abreviação, unidade, marca, categoria);
+    \item Produzir um artigo científico submetível a conferência nacional da área (BRACIS, ENIAC ou PROPOR).
+\end{itemize}
+
+As arquiteturas Bi-Encoder (embeddings especializados com recuperação por similaridade) e híbrida (recuperação seguida de reranqueamento) são reconhecidas como direções promissoras, porém deliberadamente situadas como trabalho futuro, em razão do escopo temporal do trabalho.
+
+% ============================================================
+% 4. METODOLOGIA
 % ============================================================
 \section{Metodologia}
 
-\begin{dica}
-\noindent\textbf{Dica ao autor — Como escrever a Metodologia:}
+% \begin{dica}
+% \noindent\textbf{Dica ao autor — Como escrever a Metodologia:}
+%
+% A metodologia é o seu \textbf{protocolo de laboratório}. Um pesquisador independente deve conseguir reproduzir todo o estudo lendo apenas esta seção. Inclua obrigatoriamente:
+% \begin{itemize}
+%     \item \textbf{Dados:} Fonte, volume, período de coleta, formato, dicionário de variáveis.
+%     \item \textbf{Pré-processamento:} Tratamento de \textit{missing values} (qual estratégia e por quê), \textit{outliers}, codificação, normalização.
+%     \item \textbf{Divisão treino/teste:} Proporção e método (\textit{holdout}, \textit{K-fold}, \textit{stratified}).
+%     \item \textbf{Algoritmos:} Quais, com quais hiperparâmetros, e por que foram escolhidos.
+%     \item \textbf{Métricas:} Quais métricas de avaliação e por que são adequadas para o problema.
+%     \item \textbf{Reprodutibilidade:} \textit{Seed}, versões de software, link do repositório.
+% \end{itemize}
+% Use verbos no \textbf{pretérito perfeito} se os experimentos já foram realizados (``foram treinados'', ``utilizou-se''), ou no \textbf{futuro} se for um projeto de pesquisa (``serão treinados'').
+% \end{dica}
 
-A metodologia é o seu \textbf{protocolo de laboratório}. Um pesquisador independente deve conseguir reproduzir todo o estudo lendo apenas esta seção. Inclua obrigatoriamente:
+\subsection{Construção do conjunto de dados e ground truth}
+\label{sec:construcao-dataset}
+
+O maior risco técnico do projeto é a inexistência de ground truth anotado --- condição que inviabiliza treinamento supervisionado e avaliação rigorosa sem trabalho prévio de rotulagem. Este desafio é tratado como parte integrante da contribuição do trabalho, e não como limitação a ser minimizada. A estratégia adotada separa deliberadamente as origens dos rótulos de treino e de teste, de modo a preservar a validade da avaliação.
+
+\textbf{Treino.} O conjunto de treino é construído a partir de três mecanismos combinados: (i) geração de pares rotulados assistida por ferramenta de geração de dados sintéticos, disponibilizada pela Dharma-AI; (ii) supervisão distante --- técnica que deriva rótulos automaticamente de uma fonte estruturada preexistente, sem anotação humana direta ---, em que o mapeamento inferível ao dicionário canônico (por exemplo, correspondência de marca e unidade normalizada) fornece rótulos provisórios; e (iii) aumentação sintética por perturbação controlada de tokens (abreviação, troca de unidades, inversão de ordem). A ferramenta de geração é movida por modelos de linguagem de grande porte; por essa razão, seu uso é restrito ao conjunto de treino.
+
+\textbf{Teste e validação.} O conjunto de teste é um padrão-ouro de aproximadamente 300 a 500 pares, anotado manualmente pelo autor diretamente sobre os dados reais do projeto, de forma independente da ferramenta de geração. Esta separação é uma decisão metodológica central: caso o conjunto de teste fosse produzido pela mesma ferramenta baseada em modelo de linguagem empregada no treino, a avaliação seria circular e mediria a aderência do modelo à distribuição do gerador, e não sua capacidade de resolver o problema real. Os produtos que compõem o conjunto de teste são removidos da base que alimenta a geração de treino, aplicando-se a partição por produto canônico antes da geração, de modo a impedir vazamento.
+
+\textbf{Confiabilidade da anotação.} Sendo a anotação conduzida por um único anotador, não é aplicável o cálculo de concordância inter-anotadores (Cohen's Kappa). Adota-se, em seu lugar, um procedimento de teste-reteste (concordância intra-anotador): um subconjunto correspondente a pelo menos 50\% do conjunto de teste é reanotado após intervalo de pelo menos sete dias, sem acesso aos rótulos originais, e a concordância entre as duas passagens é reportada como medida de consistência interna (faixa desejável de Kappa superior a 0,75). Casos genuinamente indecidíveis recebem rótulo transitório e são adjudicados por consulta ao dicionário canônico oficial, não integrando o conjunto de teste. A alternativa de recrutar um segundo anotador --- ainda que sobre um subconjunto restrito e sem acesso ao pipeline de geração e às heurísticas de supervisão distante, o que permitiria reportar uma concordância inter-anotadores genuína --- foi considerada e descartada por indisponibilidade de um colaborador com esse perfil no horizonte deste trabalho; o risco de vazamento de critério do treino para os rótulos de teste, decorrente de o mesmo autor conhecer ambas as etapas, é reconhecido explicitamente como limitação, mitigada apenas parcialmente pelo teste-reteste.
+
+\textbf{Guidelines de anotação.} As regras de decisão para match/não-match --- incluindo casos-limite como variantes de composição (integral vs. desnatado), marcas próprias vs. nacionais e diferenças de tamanho/unidade --- estão documentadas em protocolo próprio (\texttt{docs/protocolo\_anotacao.md}, repositório do projeto), mantido como artefato versionado e auditável. O dicionário canônico recebido do projeto ALTA confirma a granularidade por produto genérico (por exemplo, uma única entrada ``ARROZ BRANCO'', sem variantes por marca ou tamanho de embalagem); a regra de tamanho/unidade documentada no protocolo é a correspondente a essa granularidade.
+
+\textbf{Divisão dos dados e prevenção de vazamento.} O particionamento é estratificado por produto canônico: todos os pares que envolvem um dado produto do dicionário permanecem integralmente em uma única partição, com proporção sugerida de 70\% para treino, 15\% para validação e 15\% para teste. A aumentação sintética é aplicada exclusivamente ao treino, após o particionamento. O dicionário canônico recebido possui uma coluna adicional (\texttt{cod\_padrao}) cujo significado não foi confirmado com o time do ALTA; optou-se por não utilizá-la como sinal de categoria, de modo que a estratificação e a geração de candidatos não incorporam balanceamento por categoria de produto.
+
+\subsection{Formulação e modelo}
+\label{sec:formulacao-modelo}
+
+O problema é formulado como uma tarefa de Cross-Encoder: dado um par de descrições de produtos, o modelo produz uma decisão binária de match / não-match. Esta formulação privilegia a precisão e simplifica a avaliação; seu custo de inferência quadrático é mitigado por uma etapa prévia de blocagem sobre o dicionário canônico de aproximadamente 1.500 entradas.
+
+A seleção do SLM segue critérios explícitos de tamanho, suporte a português, custo de fine-tuning e licença, resumidos na Tabela~\ref{tab:criterios_slm}. A comparação é deliberadamente restrita a modelos na faixa de 2 a 4 bilhões de parâmetros, e não estendida a modelos maiores (10 a 30 bilhões de parâmetros, quantizados e/ou com arquitetura de mistura de especialistas) que a infraestrutura de treino da Dharma-AI também suportaria em inferência: o critério decisivo é a viabilidade de operação continuada do modelo fine-tuned pelo próprio projeto ALTA após o encerramento deste trabalho, sem depender de GPUs de alta capacidade (48 a 141 GB de VRAM) cuja disponibilidade de longo prazo para a infraestrutura de produção do ALTA não está garantida. Um modelo na faixa de 2 a 4 bilhões de parâmetros preserva essa portabilidade operacional mesmo em hardware modesto. Adota-se o LLaMA 3.2 3B como candidato principal, por ser o único dos três a listar explicitamente o português entre seus idiomas de suporte, por equilibrar custo de adaptação e capacidade, e por dispor de documentação madura --- fatores relevantes ao horizonte temporal do trabalho. O Gemma 2 2B é mantido como candidato secundário de menor custo.
+
+\input{tabelas/tab_criterios_selecao_slm}
+
+% \begin{dica}
+% \noindent\textbf{Dica ao autor:} As tabelas geradas pelos scripts Python são salvas em \texttt{latex/tabelas/} e importadas com \texttt{\textbackslash input\{../tabelas/nome\}}. Isso garante que, ao reexecutar o pipeline, os dados da tabela sejam atualizados sem que você precise editá-los manualmente.
+% \end{dica}
+%
+% \begin{dica}
+% \noindent\textbf{Dica ao autor:} Sempre referencie as figuras no texto antes de apresentá-las. Use \texttt{\textbackslash label\allowbreak \{fig:nome\}} e \texttt{\textbackslash ref\{fig:nome\}} para referência cruzada. O prefixo \texttt{fig:} ajuda a organizar as labels. Para figuras geradas pela pipeline, os arquivos \texttt{.eps} estão em \texttt{latex/figuras/}.
+% \end{dica}
+
+O fine-tuning será conduzido por meio de LoRA (Low-Rank Adaptation) em precisão bf16, sem quantização de 4 bits. LoRA insere matrizes treináveis de baixo posto em camadas do modelo, mantendo os pesos originais congelados --- reduzindo drasticamente o número de parâmetros ajustados; bf16 é um formato de ponto flutuante de 16 bits com a mesma faixa dinâmica do float32, evitando os problemas de overflow numérico comuns em fp16. Essa escolha é viabilizada pela infraestrutura da Dharma-AI, que disponibiliza GPUs com 48 GB (NVIDIA L40S) a 141 GB (NVIDIA H200) de memória de vídeo --- capacidade ampla para um modelo de 3 bilhões de parâmetros, tornando a quantização agressiva desnecessária e preservando maior precisão numérica no ajuste fino. [a confirmar oficialmente com o time de plataforma da Dharma-AI: configuração de produção vs. configuração de testes do ambiente.]
+
+\textbf{Plano de contingência computacional.} Caso a infraestrutura da Dharma-AI se torne indisponível, atrase ou ofereça VRAM inferior ao documentado, duas mitigações estão previstas: (i) migração para recursos de nuvem acadêmica ou Google Colab Pro como ambiente alternativo de treino; e (ii) redução do modelo-alvo para o Gemma 2 2B, candidato secundário já justificado na Tabela~\ref{tab:criterios_slm}, que demanda menos memória e mantém o cronograma viável sem necessidade de requalificar o pipeline de fine-tuning.
+
+\subsection{Blocagem e formulação de recuperação}
+
+A Figura~\ref{fig:pipeline} sintetiza o encadeamento entre blocagem lexical, geração de candidatos, reranqueamento pelo Cross-Encoder, roteamento pelo pipeline progressivo e a comparação experimental contra os baselines, descrito em detalhe ao longo desta e das próximas subseções.
+
+\input{figuras/fig_pipeline}
+
+A blocagem --- etapa que reduz o espaço de candidatos antes da aplicação do Cross-Encoder --- é realizada por meio de TF-IDF ou BM25 sobre o dicionário canônico, reaproveitando os mesmos métodos já implementados como baselines (Seção~\ref{sec:baselines-avaliacao}). Para cada produto de entrada, os k candidatos mais similares do dicionário são recuperados por similaridade lexical, e o Cross-Encoder pontua cada par (produto, candidato) com uma probabilidade de match. É importante demarcar que essa blocagem é um filtro lexical clássico, não uma arquitetura Bi-Encoder aprendida: a decisão de matching permanece inteiramente a cargo do Cross-Encoder, e o termo ``formulação de Cross-Encoder'' refere-se a esse modelo de decisão, não ao pipeline de produção como um todo --- distinção também adotada por trabalhos que tratam a blocagem como etapa independente do modelo de matching \cite{thirumuruganathan2021}.
+
+Essa arquitetura de recuperação define precisamente as métricas de ranqueamento: o Recall@K mede se o match verdadeiro está entre os k candidatos retornados pela blocagem após o reranqueamento do Cross-Encoder, e o MRR é calculado sobre a posição do match verdadeiro nessa lista reordenada. Consequentemente, a blocagem impõe um teto de recall que o Cross-Encoder não recupera sozinho --- limitação que será quantificada reportando-se o recall da blocagem isoladamente, antes do reranqueamento.
+
+\subsection{Baselines e avaliação}
+\label{sec:baselines-avaliacao}
+
+Antes de qualquer modelo especializado, um conjunto de baselines clássicos (TF-IDF, BM25, Levenshtein, Jaccard e embeddings genéricos) será implementado e avaliado sobre o mesmo conjunto de teste, com protocolo de avaliação congelado. Adicionalmente, o próprio LLaMA 3.2 3B sem fine-tuning (zero-shot, via prompt estruturado para a decisão de match/não-match) compõe o conjunto de baselines. O uso do mesmo modelo-base do fine-tuning como baseline zero-shot isola o efeito da especialização: eventuais diferenças de desempenho são atribuíveis ao processo de fine-tuning, e não a diferenças de arquitetura ou capacidade do modelo --- condição necessária para testar integralmente a hipótese central deste trabalho, que contrapõe o modelo especializado tanto a métodos tradicionais quanto a modelos genéricos.
+
+A avaliação reportará Precision, Recall e F1 para a decisão binária e, para o ranqueamento de candidatos, MRR e Recall@K. A diferença de desempenho entre o modelo especializado e os baselines será submetida a teste de significância estatística, em resposta direta à hipótese central (Seção~\ref{sec:hipotese-central}). Complementarmente, a fatia suplementar de pares produto--produto (Seção~\ref{sec:delimitacao-escopo}) é avaliada separadamente, para demonstrar que a formulação de Cross-Encoder generaliza à subtarefa de matching intra-base sem necessidade de retreinamento.
+
+\subsection{Pipeline progressivo}
+
+A investigação do pipeline progressivo (Seção~\ref{sec:objetivos-especificos}) é operacionalizada como uma análise pós-hoc sobre as saídas já geradas na Seção~\ref{sec:baselines-avaliacao}: define-se um limiar de confiança sobre a pontuação do baseline lexical mais forte (TF-IDF ou BM25) acima do qual a decisão de match/não-match é aceita sem consultar o SLM. Pares abaixo desse limiar --- os casos ambíguos --- são roteados ao Cross-Encoder fine-tuned. A análise mede a fração de pares resolvida pelo método barato, a economia computacional resultante e a eventual perda de acurácia frente a rodar o SLM sobre a totalidade dos pares, reaproveitando as avaliações da Semana 12 sem exigir novo treinamento.
+
+\subsection{Reprodutibilidade}
+
+A reprodutibilidade é tratada como requisito. O código será disponibilizado em repositório público após a defesa, com seeds fixas em todas as etapas estocásticas (particionamento, geração e treino), configurações versionadas (YAML/Hydra), ambiente com dependências travadas e rastreamento de experimentos por meio de uma única ferramenta (Weights \& Biases ou MLflow). Uma vez que a geração de treino recorre a modelos de linguagem, cujas chamadas podem não ser determinísticas, o próprio conjunto de treino gerado será versionado e publicado como artefato, garantindo a reprodutibilidade dos experimentos mesmo sem a reprodução bit a bit da geração. [a confirmar: a disponibilização do repositório de código e do conjunto de teste anotado está condicionada à autorização dos coordenadores do projeto ALTA/CNPq, dadas as possíveis restrições de compartilhamento dos dados, e também da Dharma-AI, cuja ferramenta de geração de dados e infraestrutura sustentam o treino e cujo código-fonte de apoio pode estar embutido no repositório a ser publicado.]
+
+\subsection{Caracterização da base (análise exploratória planejada)}
+
+A caracterização quantitativa da base ALTA será conduzida na etapa inicial de execução, com os dados brutos já disponíveis: um extrato consolidado de 30.260 registros de preços, coletado em 10 de setembro de 2026 a partir de oito redes de supermercado nos três estados monitorados, e o dicionário canônico de 1.593 entradas recebido do projeto ALTA. Este extrato é uma coleta pontual disponibilizada para viabilizar o desenvolvimento do TCC, não a série histórica completa acumulada pelo ALTA --- volume suficiente para sustentar tanto a geração de treino assistida por ferramenta quanto a fatia suplementar de validação sem dicionário (Seção~\ref{sec:delimitacao-escopo}). A análise exploratória reportará, com precisão: número total de registros coletados, número de estabelecimentos e sua distribuição pelos três estados (Paraíba, Ceará e Piauí), número de entradas do dicionário canônico e taxa estimada de sobreposição de produtos entre lojas. A distribuição de produtos por categoria não será reportada: o dicionário canônico possui uma coluna candidata (\texttt{cod\_padrao}) cujo significado não foi confirmado com o time do ALTA, e optou-se por não utilizá-la como campo de categoria. A proporção entre pares de match e não-match será conhecida somente após a construção do conjunto rotulado e reportada junto às métricas do conjunto de dados.
+
+% ============================================================
+% 5. CRONOGRAMA DE EXECUÇÃO
+% ============================================================
+\section{Cronograma de Execução}
+
+O trabalho é planejado para execução individual ao longo de dezesseis semanas, com dedicação parcial. Os marcos possuem critério de conclusão verificável. Dada a criticidade da construção do ground truth, adota-se a regra de que eventuais atrasos serão absorvidos pela etapa de ablação (Semana 13), nunca pela etapa de anotação ou pela redação.
+
+\textbf{Redação incremental.} Para mitigar o risco de concentrar a redação do TCC em uma única semana final, a Introdução, a Revisão de Literatura e a Metodologia são redigidas em paralelo à execução técnica, ao longo das Semanas 1 a 9 --- seções que não dependem de resultados experimentais. Um checkpoint de escrita ao final da Semana 8 exige pelo menos 60\% do texto do TCC redigido (todas as seções exceto Resultados e Discussão). Isso libera a Semana 15 exclusivamente para a redação de Resultados, Discussão e Conclusão, e reserva espaço explícito para revisão do orientador antes da entrega final.
+
+\input{tabelas/tab_cronograma_execucao}
+
+A redação do artigo de conferência será conduzida a partir do TCC, posteriormente à Semana 16, com folga em relação à entrega institucional.
+
+% ============================================================
+% 6. JUSTIFICATIVA E CONTRIBUIÇÃO CIENTÍFICA
+% ============================================================
+\section{Justificativa e Contribuição Científica}
+
+\subsection{Relevância aplicada}
+
+O problema de Entity Matching em bases de preços de varejo possui impacto direto na qualidade das análises do projeto ALTA/CNPq. Sem a resolução de entidades, registros do mesmo produto em lojas diferentes permanecem incomparáveis, inviabilizando estudos de cesta básica, análise de competitividade regional e monitoramento inflacionário. A solução desenvolvida contribui diretamente para a infraestrutura analítica do projeto.
+
+\subsection{Lacuna científica}
+
+Conforme detalhado na revisão de literatura, a pesquisa em EM concentra-se em dados estruturados em inglês, com benchmarks consolidados. O matching de produtos em português brasileiro, com o perfil de ruído específico de sistemas de PDV de varejo regional, constitui cenário pouco explorado. O fine-tuning de um SLM para este domínio representa uma contribuição metodológica original, especialmente por operar em regime de baixo recurso, a partir de ausência total de rótulos.
+
+\subsection{Hipótese central}
+\label{sec:hipotese-central}
+
+A hipótese central deste trabalho é que um SLM com fine-tuning supervisionado no domínio de produtos de supermercado supera tanto os métodos tradicionais de similaridade de strings quanto o mesmo modelo sem especialização (zero-shot), mesmo com um conjunto de treinamento de escala moderada. Dado o tamanho do conjunto de teste (300 a 500 pares, Seção~\ref{sec:construcao-dataset}), a significância estatística é avaliada por teste pareado adequado à comparação de classificadores sobre o mesmo conjunto (por exemplo, teste de McNemar), reportando-se também o tamanho do efeito e os intervalos de confiança independentemente do resultado do teste de hipótese --- uma vez que, com esse N, diferenças de pequena magnitude podem não atingir significância estatística sem que isso invalide a direção do efeito observado.
+
+\subsection{Alinhamento com o horizonte de pesquisa}
+
+O trabalho é concebido para produzir três entregas simultâneas: o TCC como entrega institucional na UFPB; um artigo científico submetível a conferência nacional; e uma base metodológica sólida para possível continuidade em programa de pós-graduação. O desenvolvimento ocorre com infraestrutura da Dharma-AI, startup especializada em fine-tuning de SLMs para domínios específicos, o que assegura recursos computacionais adequados e conhecimento técnico especializado. O uso desses recursos é conduzido com conhecimento interno da empresa, da qual o autor é colaborador; [a confirmar formalmente, por escrito, com a liderança da Dharma-AI: autorização para uso de sua infraestrutura e ferramenta de geração de dados no âmbito deste TCC.] [a levantar com o orientador, antes da defesa: avaliação conjunta do potencial de proteção por patente ou registro sobre a solução desenvolvida (modelo fine-tuned, pipeline ou artefatos gerados); a conversa ainda não ocorreu, e a decisão sobre o que abrir e quando depende de seu resultado.]
+
+% ============================================================
+% 7. TRABALHOS FUTUROS
+% ============================================================
+\section{Trabalhos Futuros}
+
+Delimitações de escopo adotadas neste trabalho, motivadas pelo horizonte temporal de dezesseis semanas em execução individual, definem direções naturais de continuidade:
+
 \begin{itemize}
-    \item \textbf{Dados:} Fonte, volume, período de coleta, formato, dicionário de variáveis.
-    \item \textbf{Pré-processamento:} Tratamento de \textit{missing values} (qual estratégia e por quê), \textit{outliers}, codificação, normalização.
-    \item \textbf{Divisão treino/teste:} Proporção e método (\textit{holdout}, \textit{K-fold}, \textit{stratified}).
-    \item \textbf{Algoritmos:} Quais, com quais hiperparâmetros, e por que foram escolhidos.
-    \item \textbf{Métricas:} Quais métricas de avaliação e por que são adequadas para o problema.
-    \item \textbf{Reprodutibilidade:} \textit{Seed}, versões de software, link do repositório.
+    \item Arquiteturas Bi-Encoder e híbrida (recuperação neural seguida de reranqueamento) --- direções reconhecidamente promissoras (Seção~\ref{sec:objetivos-especificos}), situadas fora do escopo deste trabalho em favor da formulação de Cross-Encoder único;
+    \item Avaliação plena da subtarefa de matching intra-base (produto--produto, sem intermediação do dicionário canônico) em escala, incluindo uma estratégia de blocagem própria para esse cenário --- este trabalho valida a generalização do Cross-Encoder a essa subtarefa apenas em uma fatia suplementar de teste (Seção~\ref{sec:delimitacao-escopo});
+    \item Transferência de domínio a partir de benchmarks de EM em inglês, seguida de fine-tuning no domínio de produtos em português brasileiro;
+    \item Publicação do conjunto de teste anotado como benchmark aberto de EM de produtos em português brasileiro, mediante autorização dos coordenadores do projeto ALTA/CNPq.
 \end{itemize}
-Use verbos no \textbf{pretérito perfeito} se os experimentos já foram realizados (``foram treinados'', ``utilizou-se''), ou no \textbf{futuro} se for um projeto de pesquisa (``serão treinados'').
-\end{dica}
 
-A metodologia deste trabalho segue o pipeline padrão de Ciência de Dados, conforme ilustrado na Figura~\ref{fig:pipeline}. O repositório do projeto\footnote{Repositório disponível em \url{https://github.com/seu-usuario/projeto-tcc}} contém todos os scripts e dados necessários para reprodução integral dos resultados.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.92\textwidth]{pipeline_metodologico.eps}
-    \caption{Pipeline metodológico do projeto de Ciência de Dados.}
-    \label{fig:pipeline}
-    \small \textit{Fonte: Elaborado pelo autor (\the\year).}
-\end{figure}
-
-\subsection{Coleta de Dados}
-
-Para este trabalho demonstrativo, foi gerado um dataset fictício simulando dados de clientes de telecomunicações, contendo \num{1000} registros e 12 variáveis. O dicionário das variáveis pode ser consultado na Tabela~\ref{tab:dicionario}.
-
-\input{tabelas/tab_dicionario_dados.tex}
-
-\subsection{Pré-processamento}
-
-O pré-processamento incluiu imputação de valores ausentes pela mediana, winsorização de \textit{outliers} nos percentis $P_1$ e $P_{99}$, criação de variáveis derivadas (renda por produto, taxa de reclamação por tempo de conta), codificação \textit{one-hot} para variáveis categóricas e normalização com \textit{StandardScaler}.
-
-\subsection{Treinamento e Validação}
-
-Foram treinados três modelos: Regressão Logística ($C = 1.0$), \textit{Random Forest} (200 árvores, $max\_depth = 10$) e \textit{LightGBM} (200 iterações, $learning\_rate = 0.05$). A validação foi realizada por \textit{Stratified K-Fold} com $K = 5$, e a divisão treino/teste foi de 80\%/20\%.
-
-% ============================================================
-% 4. RESULTADOS
-% ============================================================
-\section{Resultados e Discussão}
-
-\begin{dica}
-\noindent\textbf{Dica ao autor — Como escrever Resultados e Discussão:}
-
-Esta é a seção mais importante. Siga o padrão \textbf{OII} para cada resultado:
-\begin{enumerate}
-    \item \textbf{Observação:} O que os dados mostram? (fato objetivo)
-    \item \textbf{Interpretação:} O que isso significa? (sua análise)
-    \item \textbf{Implicação:} Como se relaciona com a literatura? (conexão)
-\end{enumerate}
-\textbf{Exemplo:} ``O LightGBM obteve AUC-ROC de 0,877, superando a Regressão Logística (0,823). [Observação] O desempenho superior pode ser atribuído à capacidade de capturar interações não-lineares. [Interpretação] Este resultado corrobora Fernandes (2023), que obteve AUC de 0,89 com dados reais. [Implicação]''
-
-\textbf{Erros comuns:} (1)~Apenas descrever tabelas sem interpretar: ``A Tabela~3 mostra os resultados.'' — e daí? (2)~Não comparar com a literatura. (3)~Ignorar resultados negativos --- se algo não funcionou, explique por quê. Toda figura e tabela \textbf{deve ser mencionada e interpretada no texto}.
-\end{dica}
-
-\subsection{Análise Exploratória}
-
-A análise revelou que aproximadamente 20\% dos clientes são classificados como \textit{churn}. A Tabela~\ref{tab:estatisticas} apresenta as estatísticas descritivas das variáveis numéricas.
-
-\input{tabelas/tab_estatisticas_descritivas}
-
-A Figura~\ref{fig:churn_categoria} detalha a taxa de \textit{churn} por categoria de cliente, evidenciando segmentos com maior propensão ao cancelamento.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.72\textwidth]{churn_por_categoria.eps}
-    \caption{Taxa de \textit{churn} por categoria de cliente.}
-    \label{fig:churn_categoria}
-    \small \textit{Fonte: Elaborado pelo autor (\the\year).}
-\end{figure}
-
-A Figura~\ref{fig:roc} apresenta as curvas ROC dos três modelos avaliados. Observa-se que o \textit{LightGBM} apresenta desempenho superior, corroborando os achados de \citeonline{ke2017lightgbm}.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.7\textwidth]{curva_roc.eps}
-    \caption{Curvas ROC dos modelos avaliados no conjunto de teste.}
-    \label{fig:roc}
-    \small \textit{Fonte: Elaborado pelo autor (\the\year).}
-\end{figure}
-
-\subsection{Discussão dos Resultados}
-
-O melhor desempenho do \textit{LightGBM} pode ser atribuído à sua capacidade de capturar interações não lineares entre as variáveis preditoras~\cite{machado2023}. A Regressão Logística, apesar de mais simples, apresentou desempenho competitivo, o que é relevante para cenários onde a interpretabilidade~\cite{pecanha2024} é prioritária.
+% \begin{dica}
+% \noindent\textbf{Dica ao autor — Como escrever Resultados e Discussão:}
+%
+% Esta é a seção mais importante. Siga o padrão \textbf{OII} para cada resultado:
+% \begin{enumerate}
+%     \item \textbf{Observação:} O que os dados mostram? (fato objetivo)
+%     \item \textbf{Interpretação:} O que isso significa? (sua análise)
+%     \item \textbf{Implicação:} Como se relaciona com a literatura? (conexão)
+% \end{enumerate}
+% \textbf{Exemplo:} ``O LightGBM obteve AUC-ROC de 0,877, superando a Regressão Logística (0,823). [Observação] O desempenho superior pode ser atribuído à capacidade de capturar interações não-lineares. [Interpretação] Este resultado corrobora Fernandes (2023), que obteve AUC de 0,89 com dados reais. [Implicação]''
+%
+% \textbf{Erros comuns:} (1)~Apenas descrever tabelas sem interpretar: ``A Tabela~3 mostra os resultados.'' — e daí? (2)~Não comparar com a literatura. (3)~Ignorar resultados negativos --- se algo não funcionou, explique por quê. Toda figura e tabela \textbf{deve ser mencionada e interpretada no texto}.
+% \end{dica}
+%
+% \begin{dica}
+% \noindent\textbf{Dica ao autor — Como escrever as Considerações Finais:}
+%
+% A conclusão \textbf{não} é um resumo do trabalho. É uma avaliação de fechamento. Estruture assim:
+% \begin{enumerate}
+%     \item \textbf{Retomada dos objetivos:} Cada objetivo específico foi alcançado? Avalie honestamente.
+%     \item \textbf{Contribuições:} O que o trabalho acrescenta ao campo? (1 parágrafo)
+%     \item \textbf{Limitações:} O que não foi possível fazer e por quê? Reconhecer limitações demonstra \textbf{maturidade intelectual} --- os avaliadores valorizam isso.
+%     \item \textbf{Trabalhos futuros:} Sugestões concretas e viáveis para pesquisas subsequentes.
+% \end{enumerate}
+% \textbf{Regras de ouro:}
+% \begin{itemize}
+%     \item Não introduza referências novas nem dados que não foram discutidos.
+%     \item Não comece com ``Em suma'' ou ``Portanto'' --- comece com conteúdo substantivo.
+%     \item Seja específico nos trabalhos futuros: ``testar SMOTE para balanceamento'' é melhor que ``explorar outras técnicas''.
+% \end{itemize}
+% \end{dica}
+% Nota: as duas dicas acima (Resultados/Discussão e Considerações Finais) são preservadas do
+% template original; este documento é a PROPOSTA (sem essas seções ainda) — aplicam-se na
+% versão final do TCC (spec 005), quando as seções Resultados, Discussão e Conclusão existirem.
 
 % ============================================================
-% 5. CONSIDERAÇÕES FINAIS
-% ============================================================
-\section{Considerações Finais}
-
-\begin{dica}
-\noindent\textbf{Dica ao autor — Como escrever as Considerações Finais:}
-
-A conclusão \textbf{não} é um resumo do trabalho. É uma avaliação de fechamento. Estruture assim:
-\begin{enumerate}
-    \item \textbf{Retomada dos objetivos:} Cada objetivo específico foi alcançado? Avalie honestamente.
-    \item \textbf{Contribuições:} O que o trabalho acrescenta ao campo? (1 parágrafo)
-    \item \textbf{Limitações:} O que não foi possível fazer e por quê? Reconhecer limitações demonstra \textbf{maturidade intelectual} --- os avaliadores valorizam isso.
-    \item \textbf{Trabalhos futuros:} Sugestões concretas e viáveis para pesquisas subsequentes.
-\end{enumerate}
-\textbf{Regras de ouro:}
-\begin{itemize}
-    \item Não introduza referências novas nem dados que não foram discutidos.
-    \item Não comece com ``Em suma'' ou ``Portanto'' --- comece com conteúdo substantivo.
-    \item Seja específico nos trabalhos futuros: ``testar SMOTE para balanceamento'' é melhor que ``explorar outras técnicas''.
-\end{itemize}
-\end{dica}
-
-Este trabalho investigou a aplicação de técnicas de \textit{Machine Learning} para a previsão de \textit{churn} de clientes em telecomunicações. O objetivo geral foi alcançado com êxito, demonstrando que modelos de \textit{gradient boosting} apresentam desempenho superior para este tipo de problema. A principal contribuição reside na construção de um pipeline reprodutível, com scripts versionados e documentados, que pode servir como referência metodológica.
-
-\textbf{Limitações:} (i) utilização de dados fictícios; (ii) ausência de otimização de hiperparâmetros~\cite{machado2023}; (iii) não exploração de técnicas de balanceamento; (iv) janela temporal limitada.
-
-\textbf{Trabalhos futuros:} (i) aplicação com dados reais; (ii) otimização automatizada de hiperparâmetros; (iii) exploração de \textit{Deep Learning}; (iv) desenvolvimento de \textit{dashboard} interativo para monitoramento em tempo real.
-
-% ============================================================
-% REFERÊNCIAS
+% 8. REFERÊNCIAS
 % ============================================================
 \bibliographystyle{abntex2-alf}
 \bibliography{referencias}
