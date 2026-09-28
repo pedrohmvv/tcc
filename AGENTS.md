@@ -46,7 +46,13 @@ Matplotlib/Seaborn em teste: backend `Agg` ou mock de `savefig`.
 
 Única saída de texto do TCC: `latex/tcc_artigo/` (`abntex2[article]`). Compilar com `make latex DOC=tcc_artigo` (`latexmk`).
 
-Figuras e tabelas em `latex/tcc_artigo/figuras/` e `tabelas/` são geradas pelo script 06 — não editar à mão. Strings LaTeX exportadas do Pandas precisam preservar escapes (`replace("_", r"\_")` e equivalentes).
+Duas categorias de arquivo em `latex/tcc_artigo/figuras/` e `tabelas/`, com regras distintas:
+
+- **Tabelas/figuras de resultado** (números de experimento: métricas, comparações, ablação) — geradas pelo script 06, **nunca editadas à mão**. É aqui que a regra evita número digitado errado.
+- **Tabelas/figuras de conteúdo qualitativo** (não derivam de resultado experimental: critérios de seleção, cronograma, diagrama do pipeline) — escritas à mão, versionadas normalmente. Hoje: `tab_criterios_selecao_slm.tex`, `tab_cronograma_execucao.tex`, `fig_pipeline.tex`.
+- `tab_heterogeneidade_exemplos.tex` é caso especial: hoje escrita à mão, mas **deve migrar** para geração automática pelo script 02 assim que a EDA existir (spec 001, tarefa 1.1.4) — passa a extrair exemplos reais da base em vez de exemplo digitado.
+
+Strings LaTeX exportadas do Pandas precisam preservar escapes (`replace("_", r"\_")` e equivalentes).
 
 Não gerar `.docx` nem outros formatos para o texto final.
 
