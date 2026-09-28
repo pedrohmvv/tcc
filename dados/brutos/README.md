@@ -41,7 +41,7 @@ O dataset padrão deste repositório é gerado pelo script `01_coleta_dados.py` 
 **Fonte:** ETL do projeto ALTA/CNPq (`cnpq-precos-etl`), extrato consolidado de 8 APIs de supermercado.
 **Data de coleta:** 10/09/2026 (coleta pontual — não representa a série histórica completa do ALTA).
 **Responsável pela coleta:** Equipe/pipeline do projeto ALTA.
-**Tamanho:** 30.260 registros × 13 colunas.
+**Tamanho:** 30.259 registros × 13 colunas.
 **Formato:** CSV, separador vírgula, encoding UTF-8.
 
 **Descrição das variáveis:**
@@ -63,7 +63,7 @@ O dataset padrão deste repositório é gerado pelo script `01_coleta_dados.py` 
 **Observações:**
 - **Dados sensíveis:** nenhum dado pessoal; preços e descrições de produtos são públicos.
 - **⚠️ Risco de vazamento metodológico:** as colunas `codg_item`, `desc_ref` e `match_score` refletem um matching heurístico **já aplicado pelo pipeline de produção do ALTA**, anterior e independente deste TCC. Essas colunas **não devem ser usadas como insumo na anotação manual do conjunto de teste** (padrão-ouro, ADR-0004) nem no treinamento do Cross-Encoder deste trabalho — usá-las contaminaria a avaliação com os critérios (desconhecidos) de um matching de terceiros. Podem, no máximo, ser citadas como contexto do pipeline de origem dos dados.
-- **Restrições de uso:** dados do projeto ALTA/CNPq; abertura pública condicionada à autorização dos coordenadores do ALTA/CNPq e da Dharma-AI (ver `main.tex`, §4.5).
+- **Restrições de uso:** dados do projeto ALTA/CNPq; abertura pública condicionada à autorização dos coordenadores do ALTA/CNPq e da Dharma-AI (ver `main.tex`, §4.6 "Reprodutibilidade").
 
 ### Nome do arquivo: `dicionario_canonico.csv`
 
@@ -78,7 +78,7 @@ O dataset padrão deste repositório é gerado pelo script `01_coleta_dados.py` 
 |-------|------|-----------|
 | `desc_alim` | Texto | Descrição canônica do produto genérico (sem marca/tamanho — ex.: "ARROZ BRANCO") |
 | `codg_item1` | Numérico | Código de item, granularidade de produto genérico |
-| `cod_padrao` | Categórico | 10 valores distintos (0–9, 99); **significado não confirmado com o ALTA** — candidato a campo de categoria, ver `main.tex` §4.1/§4.7 |
+| `cod_padrao` | Categórico | 10 valores distintos (`1`–`9`, mais `99`; não existe o valor `0`); **significado não confirmado com o ALTA** — candidato a campo de categoria, ver `main.tex` §4.1/§4.7 |
 
 **Observações:**
 - Confirma a granularidade do dicionário como **produto genérico**, não SKU/marca — resolve a dúvida de `main.tex` §4.1 sobre a regra de tamanho/unidade.

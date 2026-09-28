@@ -15,7 +15,7 @@ Este documento define as regras operacionais que o anotador (autor) segue para d
 
 Dois tipos de par são anotados no mesmo esforço (Semanas 3–5):
 
-1. **Produto × Entrada canônica** (核心, ~250–450 pares) — par entre uma descrição bruta da base ALTA e uma entrada do dicionário canônico.
+1. **Produto × Entrada canônica** (fatia principal, ~250–450 pares) — par entre uma descrição bruta da base ALTA e uma entrada do dicionário canônico.
 2. **Produto × Produto** (~50–100 pares, fatia suplementar) — par entre duas descrições brutas de lojas diferentes, sem intermediação do dicionário. Usado para validar a generalização do Cross-Encoder à subtarefa intra-base (Seção 1.1 da proposta).
 
 As mesmas regras de decisão (Seção 3) aplicam-se aos dois tipos de par.
