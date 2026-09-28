@@ -77,6 +77,8 @@ dados/brutos/*
 !dados/brutos/.gitkeep
 !dados/brutos/README.md
 !dados/processados/README.md
+# Padrão-ouro de anotação: não regenerável, custa semanas de trabalho manual.
+!dados/processados/anotacoes*.csv
 
 # ── Resultados (regeneráveis pelos scripts) ──────────────────
 resultados/*
@@ -106,9 +108,14 @@ latex/*.png
 latex/*.eps
 *.pdf
 *.eps
+# Exceção: parecer do avaliador é documento institucional, insubstituível
+# e não regenerável — não é um PDF compilado do LaTeX.
+!docs/parecer/*.pdf
 
 # ── Repo Pessoal ──────────────────
 # Makefile, pyproject.toml e uv.lock voltaram a ser rastreados: o CI
 # (.github/workflows/ci.yml) depende deles via `uv sync` e `make test`.
 CONTRIBUTING.md
 CHANGELOG.md
+
+modelo-academico/
