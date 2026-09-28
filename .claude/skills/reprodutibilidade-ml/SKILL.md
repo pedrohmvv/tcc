@@ -8,7 +8,7 @@ description: Convenções de reprodutibilidade e engenharia de ML para os script
 ## Regras inegociáveis
 - Seed fixa em toda operação estocástica: particionamento de dados, geração sintética, inicialização de treino, shuffling.
 - Hiperparâmetros e configurações vivem em YAML versionado, nunca hardcoded dentro do script Python.
-- Uma única ferramenta de tracking de experimentos (Weights & Biases ou MLflow) — escolher uma no início e usar em todos os scripts de 04 a 06, sem misturar.
+- MLflow é a ferramenta de tracking de experimentos (decidido — `pyproject.toml` já traz `mlflow>=2.14`) — usar em todos os scripts de 04 a 06, sem misturar com outra ferramenta.
 - Dependências travadas via `pyproject.toml` + `uv.lock` (o template usa `uv`) — nunca instalar pacote ad-hoc sem registrar.
 
 ## Split e vazamento de dados

@@ -10,7 +10,7 @@ Fine-tuning supervisionado do LLaMA 3.2 3B para classificação binária de pare
 1. LoRA em bf16, sem quantização de 4 bits (ADR-0003) — verificar VRAM disponível no início da execução; se inferior ao documentado (48–141 GB), acionar plano de contingência (ADR-0009) antes de prosseguir.
 2. Formatação dos pares de treino (spec 001) como entrada do modelo — mesmo formato usado depois na avaliação (spec 002/004).
 3. Mineração de negativos difíceis a partir dos pares de treino.
-4. Tracking de experimentos via uma única ferramenta (W&B ou MLflow — decidir e manter consistente em todo o projeto).
+4. Tracking de experimentos via MLflow (decidido — `pyproject.toml` já traz `mlflow>=2.14`), usado de forma consistente em todos os scripts de 04 a 06.
 
 ## Requisitos não funcionais
 - Seeds fixas; configs de hiperparâmetros versionadas (YAML/Hydra), não hardcoded no script.
