@@ -54,6 +54,8 @@ class ContagensBasicas(TypedDict):
     total_entradas_dicionario: int
     product_id_distintos: int
     descricoes_distintas: int
+    numero_estabelecimentos: int
+    taxa_sobreposicao_lojas: float
     distribuicao_source: dict[str, int]
     distribuicao_location: dict[str, int]
     distribuicao_estado: dict[str, int]
@@ -305,10 +307,30 @@ def calcular_contagens_basicas(
         "total_entradas_dicionario": len(df_dicionario),
         "product_id_distintos": df_produtos["product_id"].nunique(),
         "descricoes_distintas": df_produtos["description"].nunique(),
+        "numero_estabelecimentos": df_produtos["location"].nunique(),
+        "taxa_sobreposicao_lojas": estimar_sobreposicao_entre_lojas(df_produtos),
         "distribuicao_source": df_produtos["source"].value_counts().to_dict(),
         "distribuicao_location": df_produtos["location"].value_counts().to_dict(),
         "distribuicao_estado": estados.value_counts().to_dict(),
     }
+
+
+def estimar_sobreposicao_entre_lojas(df_produtos: pd.DataFrame) -> float:
+    """Taxa ingênua de sobreposição de produtos entre lojas (`main.tex` §4.7).
+
+    Mede a fração de descrições normalizadas (texto exato, sem blocagem)
+    que aparecem em mais de uma fonte (`source`). **Isto subestima a
+    sobreposição real de produtos**: o mesmo produto físico raramente tem
+    texto idêntico entre lojas — é exatamente o problema de heterogeneidade
+    que motiva este TCC. A blocagem da tarefa 1.2 (TF-IDF/BM25) dá uma
+    estimativa melhor; este número é só o piso ingênuo exigido pela
+    proposta antes da blocagem existir.
+    """
+    descricoes_normalizadas = df_produtos["description"].map(normalizar_para_comparacao)
+    fontes_por_descricao = df_produtos.groupby(descricoes_normalizadas)["source"].nunique()
+    if len(fontes_por_descricao) == 0:
+        return 0.0
+    return float((fontes_por_descricao > 1).sum() / len(fontes_por_descricao))
 
 
 def carregar_produtos(diretorio_brutos: Path) -> pd.DataFrame:
@@ -335,6 +357,11 @@ def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> N
         },
         {"metrica": "product_id_distintos", "valor": contagens["product_id_distintos"]},
         {"metrica": "descricoes_distintas", "valor": contagens["descricoes_distintas"]},
+        {"metrica": "numero_estabelecimentos", "valor": contagens["numero_estabelecimentos"]},
+        {
+            "metrica": "taxa_sobreposicao_lojas",
+            "valor": contagens["taxa_sobreposicao_lojas"],
+        },
     ]
     pd.DataFrame(linhas).to_csv(caminho, index=False)
 

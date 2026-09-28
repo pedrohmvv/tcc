@@ -80,6 +80,10 @@ def test_calcular_contagens_basicas_reproduz_numeros_da_amostra(
         "guedes_api": 1,
     }
     assert contagens["distribuicao_estado"] == {"PB": 2, "CE": 1, "PI": 1}
+    assert contagens["numero_estabelecimentos"] == 3
+    # "Arroz Branco Tio Joao 1kg" é a única descrição normalizada que aparece
+    # em mais de uma fonte (diniz_api e guedes_api), de 3 descrições distintas.
+    assert contagens["taxa_sobreposicao_lojas"] == pytest.approx(1 / 3)
 
 
 def test_caracterizar_ruido_pdv_reproduz_contagens_da_amostra(

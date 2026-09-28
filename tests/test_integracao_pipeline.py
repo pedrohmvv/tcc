@@ -88,6 +88,8 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     linha = df_escalares.set_index("metrica")["valor"]
     assert int(linha["total_registros"]) == 4
     assert int(linha["total_entradas_dicionario"]) == 2
+    assert int(linha["numero_estabelecimentos"]) == 3
+    assert float(linha["taxa_sobreposicao_lojas"]) == pytest.approx(1 / 3)
 
     df_distribuicoes = pd.read_csv(resultados_metricas / "distribuicoes_categoricas.csv")
     assert set(df_distribuicoes["dimensao"]) == {"source", "location", "estado"}
