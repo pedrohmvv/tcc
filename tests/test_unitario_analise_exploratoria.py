@@ -65,6 +65,25 @@ class TestEstaSemAcentuacao:
         assert eda.esta_sem_acentuacao("Café em Cápsula Torrado e Moído Intenso") is False
 
 
+class TestNormalizarParaComparacao:
+    def test_remove_acentos_e_normaliza_caixa(self) -> None:
+        assert eda.normalizar_para_comparacao("Água Mineral") == "AGUA MINERAL"
+
+    def test_ja_normalizado_permanece_igual(self) -> None:
+        assert eda.normalizar_para_comparacao("ARROZ BRANCO") == "ARROZ BRANCO"
+
+
+class TestEscaparLatex:
+    def test_escapa_underscore(self) -> None:
+        assert eda.escapar_latex("Leite_Integral") == r"Leite\_Integral"
+
+    def test_escapa_e_comercial_e_percentual(self) -> None:
+        assert eda.escapar_latex("A & B 50%") == r"A \& B 50\%"
+
+    def test_texto_sem_caracteres_especiais_permanece_igual(self) -> None:
+        assert eda.escapar_latex("Arroz Branco") == "Arroz Branco"
+
+
 class TestTemAbreviatura:
     def test_detecta_barra_de_abreviacao(self) -> None:
         assert eda.tem_abreviatura("Canjica C/ Pacoca 200g") is True

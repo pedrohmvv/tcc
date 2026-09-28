@@ -64,6 +64,7 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     dados_brutos = tmp_path / "dados" / "brutos"
     dados_brutos.mkdir(parents=True)
     resultados_metricas = tmp_path / "resultados" / "metricas"
+    latex_tabelas = tmp_path / "latex" / "tcc_artigo" / "tabelas"
 
     produtos_brutos_variados_exemplo.to_csv(
         dados_brutos / "todos_mercados_2026-01-01.csv", index=False
@@ -73,7 +74,7 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     )
 
     contagens = analise_exploratoria.estatisticas_descritivas(
-        dados_brutos, diretorio_saida=resultados_metricas
+        dados_brutos, diretorio_saida=resultados_metricas, diretorio_latex_tabelas=latex_tabelas
     )
 
     assert contagens["total_registros"] == 4
@@ -96,3 +97,29 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     linha_match_score = df_match_score.set_index("metrica")["valor"]
     assert int(linha_match_score["contagem"]) == 4
     assert float(linha_match_score["media"]) == pytest.approx(0.79)
+
+    conteudo_tabela = (latex_tabelas / "tab_heterogeneidade_exemplos.tex").read_text(
+        encoding="utf-8"
+    )
+    assert "ARROZ BRANCO" in conteudo_tabela
+
+
+def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(
+    tmp_path: Path,
+) -> None:
+    exemplos = [
+        {
+            "supermercado_a": "Arroz Branco Tio Joao 1kg",
+            "supermercado_b": "ARROZ BRANCO TIO JOAO 1KG",
+            "canonico": "ARROZ BRANCO",
+        }
+    ]
+    caminho_tex = tmp_path / "tab_heterogeneidade_exemplos.tex"
+
+    analise_exploratoria.gerar_tabela_heterogeneidade_tex(exemplos, caminho_tex)
+
+    conteudo = caminho_tex.read_text(encoding="utf-8")
+    assert "Arroz Branco Tio Joao 1kg" in conteudo
+    assert "ARROZ BRANCO TIO JOAO 1KG" in conteudo
+    assert r"\label{tab:heterogeneidade}" in conteudo
+    assert "% Gerado automaticamente" in conteudo

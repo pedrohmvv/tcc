@@ -105,3 +105,19 @@ def test_caracterizar_match_score_reproduz_estatisticas_da_amostra(
     assert distribuicao["minimo"] == pytest.approx(0.65)
     assert distribuicao["maximo"] == pytest.approx(0.92)
     assert distribuicao["mediana"] == pytest.approx(0.795)
+
+
+def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_heterogeneidade(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo, n_exemplos=5
+    )
+
+    # "AGUA MINERAL" só tem candidatos de uma única fonte (ajuba_api) e é
+    # descartada; "ARROZ BRANCO" tem candidatos de duas fontes distintas.
+    assert len(exemplos) == 1
+    assert exemplos[0]["canonico"] == "ARROZ BRANCO"
+    assert exemplos[0]["supermercado_a"] == "Arroz Branco Tio Joao 1kg"
+    assert exemplos[0]["supermercado_b"] == "Arroz Branco Tio Joao 1kg"

@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 from pathlib import Path
 from typing import TypedDict
 
@@ -55,6 +56,7 @@ SEED = 42
 DADOS_BRUTOS = Path("dados/brutos")
 RESULTADOS_METRICAS = Path("resultados/metricas")
 RESULTADOS_FIGURAS = Path("resultados/figuras")
+LATEX_TABELAS = Path("latex/tcc_artigo/tabelas")
 
 
 def extrair_estado(location: str) -> str:
@@ -94,6 +96,12 @@ def esta_sem_acentuacao(description: str) -> bool:
     tem_letra = any(c.isalpha() for c in description)
     tem_acento = any(c in _CARACTERES_ACENTUADOS for c in description)
     return tem_letra and not tem_acento
+
+
+def normalizar_para_comparacao(texto: str) -> str:
+    """Uppercase e remove acentos — comparação tolerante à variação de PDV."""
+    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
+    return sem_acento.upper().strip()
 
 
 def tem_abreviatura(description: str) -> bool:
@@ -141,6 +149,111 @@ def caracterizar_match_score(df_produtos: pd.DataFrame) -> DistribuicaoMatchScor
         "mediana": float(serie.quantile(0.5)),
         "p75": float(serie.quantile(0.75)),
     }
+
+
+_LATEX_ESCAPES = {
+    "\\": r"\textbackslash{}",
+    "&": r"\&",
+    "%": r"\%",
+    "$": r"\$",
+    "#": r"\#",
+    "_": r"\_",
+    "{": r"\{",
+    "}": r"\}",
+    "~": r"\textasciitilde{}",
+    "^": r"\textasciicircum{}",
+}
+
+
+def escapar_latex(texto: str) -> str:
+    """Escapa caracteres especiais do LaTeX (`AGENTS.md` §4: preservar escapes)."""
+    return "".join(_LATEX_ESCAPES.get(caractere, caractere) for caractere in texto)
+
+
+def selecionar_exemplos_heterogeneidade(
+    df_produtos: pd.DataFrame,
+    df_dicionario: pd.DataFrame,
+    n_exemplos: int = 3,
+    seed: int = SEED,
+) -> list[dict[str, str]]:
+    """Seleciona pares reais (loja A, loja B) por entrada canônica (spec 001, 1.1.4).
+
+    Heurística de correspondência pela frase canônica completa normalizada
+    (não só o primeiro token — "ARROZ" sozinho colidiria "ARROZ BRANCO" com
+    "ARROZ INTEGRAL") — não é a blocagem da tarefa 1.2, serve só para
+    ilustrar a heterogeneidade com dados reais em vez de exemplos
+    inventados (D1 conflito 3, D6). Requer candidatos de pelo menos duas
+    fontes (`source`) distintas para cada entrada, para que o par ilustre
+    de fato a variação entre lojas.
+    """
+    descricoes_normalizadas = df_produtos["description"].map(normalizar_para_comparacao)
+    exemplos: list[dict[str, str]] = []
+    for _, linha_dicionario in df_dicionario.iterrows():
+        canonico = str(linha_dicionario["desc_alim"])
+        frase_canonica = normalizar_para_comparacao(canonico)
+        # Ancorado ao início: descrições de PDV tipicamente abrem com o nome
+        # do produto, o que evita falso positivo de produto correlato que só
+        # cita a entrada canônica de passagem (ex.: um tempero para arroz).
+        padrao = re.compile(rf"^{re.escape(frase_canonica)}\b")
+        mascara = descricoes_normalizadas.map(lambda texto: bool(padrao.match(texto)))
+        candidatos = df_produtos[mascara]
+        fontes_distintas = sorted(candidatos["source"].unique())
+        if len(fontes_distintas) < 2:
+            continue
+
+        fonte_a, fonte_b = fontes_distintas[0], fontes_distintas[1]
+        descricao_a = (
+            candidatos[candidatos["source"] == fonte_a]["description"]
+            .sample(1, random_state=seed)
+            .iloc[0]
+        )
+        descricao_b = (
+            candidatos[candidatos["source"] == fonte_b]["description"]
+            .sample(1, random_state=seed)
+            .iloc[0]
+        )
+        exemplos.append(
+            {"supermercado_a": descricao_a, "supermercado_b": descricao_b, "canonico": canonico}
+        )
+        if len(exemplos) >= n_exemplos:
+            break
+    return exemplos
+
+
+def gerar_tabela_heterogeneidade_tex(exemplos: list[dict[str, str]], caminho: Path) -> None:
+    """Escreve a tabela LaTeX de exemplos de heterogeneidade (tarefa 1.1.4).
+
+    Substitui a versão escrita à mão (D1 conflito 3, D6) — mesma estrutura
+    de colunas/legenda/label consumida por `main.tex` via `\\input`.
+    """
+    linhas_tabela = "\n".join(
+        f"{escapar_latex(exemplo['supermercado_a'])} & "
+        f"{escapar_latex(exemplo['supermercado_b'])} & "
+        f"{escapar_latex(exemplo['canonico'])} \\\\"
+        for exemplo in exemplos
+    )
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Exemplos de heterogeneidade nas descrições de produtos}\n"
+        "\\label{tab:heterogeneidade}\n"
+        "\\small\n"
+        "\\resizebox{\\textwidth}{!}{%\n"
+        "\\begin{tabular}{lll}\n"
+        "\\toprule\n"
+        "\\textbf{Supermercado A} & \\textbf{Supermercado B} & "
+        "\\textbf{Canônico (Dicionário)} \\\\\n"
+        "\\midrule\n"
+        f"{linhas_tabela}\n"
+        "\\bottomrule\n"
+        "\\end{tabular}%\n"
+        "}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{table}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
 
 
 def caracterizar_ruido_pdv(df_produtos: pd.DataFrame) -> RuidoPDV:
@@ -245,9 +358,11 @@ def _salvar_distribuicoes(contagens: ContagensBasicas, caminho: Path) -> None:
 
 
 def estatisticas_descritivas(
-    diretorio_brutos: Path, diretorio_saida: Path = RESULTADOS_METRICAS
+    diretorio_brutos: Path,
+    diretorio_saida: Path = RESULTADOS_METRICAS,
+    diretorio_latex_tabelas: Path = LATEX_TABELAS,
 ) -> ContagensBasicas:
-    """Calcula e persiste as contagens básicas exigidas por `main.tex` §4.7 (spec 001, 1.1.1).
+    """Calcula e persiste as estatísticas descritivas da spec 001 (tarefas 1.1.1-1.1.4).
 
     Ver specs/001-construcao-dataset-ground-truth/requirements.md.
     """
@@ -256,23 +371,33 @@ def estatisticas_descritivas(
     contagens = calcular_contagens_basicas(df_produtos, df_dicionario)
     ruido = caracterizar_ruido_pdv(df_produtos)
     distribuicao_match_score = caracterizar_match_score(df_produtos)
+    exemplos_heterogeneidade = selecionar_exemplos_heterogeneidade(df_produtos, df_dicionario)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
     _salvar_distribuicoes(contagens, diretorio_saida / "distribuicoes_categoricas.csv")
     _salvar_ruido_pdv(ruido, contagens["total_registros"], diretorio_saida / "taxonomia_ruido.csv")
     _salvar_match_score(distribuicao_match_score, diretorio_saida / "distribuicao_match_score.csv")
+
+    diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
+    gerar_tabela_heterogeneidade_tex(
+        exemplos_heterogeneidade, diretorio_latex_tabelas / "tab_heterogeneidade_exemplos.tex"
+    )
+
     logger.info(
-        "EDA (1.1.1): %d registros, %d entradas no dicionário. Estatísticas em %s",
+        "EDA (1.1.1-1.1.4): %d registros, %d entradas no dicionário, %d exemplos de "
+        "heterogeneidade. Estatísticas em %s, tabela em %s",
         contagens["total_registros"],
         contagens["total_entradas_dicionario"],
+        len(exemplos_heterogeneidade),
         diretorio_saida,
+        diretorio_latex_tabelas,
     )
     return contagens
 
 
 def main() -> None:
-    estatisticas_descritivas(DADOS_BRUTOS, RESULTADOS_METRICAS)
+    estatisticas_descritivas(DADOS_BRUTOS, RESULTADOS_METRICAS, LATEX_TABELAS)
 
 
 if __name__ == "__main__":
