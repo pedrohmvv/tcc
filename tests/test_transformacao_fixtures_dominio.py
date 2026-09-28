@@ -14,6 +14,7 @@ import importlib.util
 import os
 
 import pandas as pd
+import pytest
 
 _ROOT = os.path.join(os.path.dirname(__file__), "..")
 
@@ -92,3 +93,15 @@ def test_caracterizar_ruido_pdv_reproduz_contagens_da_amostra(
         "sem_acentuacao": 3,
         "abreviatura": 1,
     }
+
+
+def test_caracterizar_match_score_reproduz_estatisticas_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    distribuicao = eda.caracterizar_match_score(produtos_brutos_variados_exemplo)
+
+    assert distribuicao["contagem"] == 4
+    assert distribuicao["media"] == pytest.approx(0.79)
+    assert distribuicao["minimo"] == pytest.approx(0.65)
+    assert distribuicao["maximo"] == pytest.approx(0.92)
+    assert distribuicao["mediana"] == pytest.approx(0.795)

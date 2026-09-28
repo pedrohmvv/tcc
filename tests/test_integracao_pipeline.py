@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 _ROOT = os.path.join(os.path.dirname(__file__), "..")
 
@@ -90,3 +91,8 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     linha_ruido = df_ruido.set_index("categoria")["contagem"]
     assert int(linha_ruido["unidade_colada"]) == 4
     assert int(linha_ruido["sem_acentuacao"]) == 3
+
+    df_match_score = pd.read_csv(resultados_metricas / "distribuicao_match_score.csv")
+    linha_match_score = df_match_score.set_index("metrica")["valor"]
+    assert int(linha_match_score["contagem"]) == 4
+    assert float(linha_match_score["media"]) == pytest.approx(0.79)

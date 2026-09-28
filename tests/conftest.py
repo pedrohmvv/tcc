@@ -61,6 +61,7 @@ def produtos_brutos_variados_exemplo() -> pd.DataFrame:
                 "location": "PB, João Pessoa, Pedro Gondim",
                 "source": "ajuba_api",
                 "collected_at": "2026-09-10 12:38:09",
+                "match_score": 0.92,
             },
             {
                 "product_id": 2,
@@ -70,6 +71,7 @@ def produtos_brutos_variados_exemplo() -> pd.DataFrame:
                 "location": "PB, João Pessoa, Pedro Gondim",
                 "source": "ajuba_api",
                 "collected_at": "2026-09-10 12:38:09",
+                "match_score": 0.65,
             },
             {
                 "product_id": 3,
@@ -79,6 +81,7 @@ def produtos_brutos_variados_exemplo() -> pd.DataFrame:
                 "location": "CE, Fortaleza, Centro",
                 "source": "diniz_api",
                 "collected_at": "2026-09-10 12:40:00",
+                "match_score": 0.88,
             },
             {
                 "product_id": 3,
@@ -88,6 +91,7 @@ def produtos_brutos_variados_exemplo() -> pd.DataFrame:
                 "location": "PI, Teresina, Centro",
                 "source": "guedes_api",
                 "collected_at": "2026-09-10 12:41:00",
+                "match_score": 0.71,
             },
         ]
     )

@@ -110,6 +110,39 @@ class RuidoPDV(TypedDict):
     abreviatura: int
 
 
+class DistribuicaoMatchScore(TypedDict):
+    """Distribuição descritiva de `match_score` (spec 001, tarefa 1.1.3).
+
+    ADR-0010: `match_score` só é lido aqui, e só para esta caracterização
+    descritiva do estado atual do matching heurístico do ALTA — nunca como
+    rótulo de anotação, supervisão distante ou treino.
+    """
+
+    contagem: int
+    media: float
+    desvio_padrao: float
+    minimo: float
+    maximo: float
+    p25: float
+    mediana: float
+    p75: float
+
+
+def caracterizar_match_score(df_produtos: pd.DataFrame) -> DistribuicaoMatchScore:
+    """Caracteriza a distribuição de `match_score` (ADR-0010: contexto, nunca rótulo)."""
+    serie = df_produtos["match_score"]
+    return {
+        "contagem": int(serie.count()),
+        "media": float(serie.mean()),
+        "desvio_padrao": float(serie.std()),
+        "minimo": float(serie.min()),
+        "maximo": float(serie.max()),
+        "p25": float(serie.quantile(0.25)),
+        "mediana": float(serie.quantile(0.5)),
+        "p75": float(serie.quantile(0.75)),
+    }
+
+
 def caracterizar_ruido_pdv(df_produtos: pd.DataFrame) -> RuidoPDV:
     """Conta, por dimensão de ruído, quantas descrições brutas exibem o padrão."""
     descricoes = df_produtos["description"]
@@ -169,6 +202,20 @@ def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> N
     pd.DataFrame(linhas).to_csv(caminho, index=False)
 
 
+def _salvar_match_score(distribuicao: DistribuicaoMatchScore, caminho: Path) -> None:
+    linhas = [
+        {"metrica": "contagem", "valor": distribuicao["contagem"]},
+        {"metrica": "media", "valor": distribuicao["media"]},
+        {"metrica": "desvio_padrao", "valor": distribuicao["desvio_padrao"]},
+        {"metrica": "minimo", "valor": distribuicao["minimo"]},
+        {"metrica": "maximo", "valor": distribuicao["maximo"]},
+        {"metrica": "p25", "valor": distribuicao["p25"]},
+        {"metrica": "mediana", "valor": distribuicao["mediana"]},
+        {"metrica": "p75", "valor": distribuicao["p75"]},
+    ]
+    pd.DataFrame(linhas).to_csv(caminho, index=False)
+
+
 def _salvar_ruido_pdv(ruido: RuidoPDV, total_registros: int, caminho: Path) -> None:
     contagens_por_categoria: list[tuple[str, int]] = [
         ("unidade_colada", ruido["unidade_colada"]),
@@ -208,11 +255,13 @@ def estatisticas_descritivas(
     df_dicionario = carregar_dicionario(diretorio_brutos)
     contagens = calcular_contagens_basicas(df_produtos, df_dicionario)
     ruido = caracterizar_ruido_pdv(df_produtos)
+    distribuicao_match_score = caracterizar_match_score(df_produtos)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
     _salvar_distribuicoes(contagens, diretorio_saida / "distribuicoes_categoricas.csv")
     _salvar_ruido_pdv(ruido, contagens["total_registros"], diretorio_saida / "taxonomia_ruido.csv")
+    _salvar_match_score(distribuicao_match_score, diretorio_saida / "distribuicao_match_score.csv")
     logger.info(
         "EDA (1.1.1): %d registros, %d entradas no dicionário. Estatísticas em %s",
         contagens["total_registros"],
