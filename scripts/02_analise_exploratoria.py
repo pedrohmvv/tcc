@@ -16,11 +16,16 @@ Entradas:
     dados/brutos/todos_mercados_*.csv
     dados/brutos/dicionario_canonico.csv
 
-Saídas (esperadas, ver spec 001):
-    resultados/metricas/estatisticas_descritivas.csv
-    resultados/figuras/*.png
+Saídas:
+    resultados/metricas/estatisticas_descritivas.csv    (tarefa 1.1.1)
+    resultados/metricas/distribuicoes_categoricas.csv   (tarefa 1.1.1)
+    resultados/metricas/taxonomia_ruido.csv              (tarefa 1.1.2)
+    resultados/metricas/distribuicao_match_score.csv     (tarefa 1.1.3, ADR-0010)
+    latex/tcc_artigo/tabelas/tab_heterogeneidade_exemplos.tex (tarefa 1.1.4)
+    resultados/figuras/distribuicao_source.png           (tarefa 1.1.5)
 
-Status: esqueleto — implementação pendente (ver spec 001).
+Status: tarefa 1.1 (spec 001) implementada. Falta 1.1.7 — leitura e
+interpretação dos números pelo autor (docs/plano_desenvolvimento.md).
 
 Uso:
     uv run python scripts/02_analise_exploratoria.py
