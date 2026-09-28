@@ -34,7 +34,12 @@ import unicodedata
 from pathlib import Path
 from typing import TypedDict
 
-import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 
 
 class ContagensBasicas(TypedDict):
@@ -220,6 +225,20 @@ def selecionar_exemplos_heterogeneidade(
     return exemplos
 
 
+def gerar_figura_distribuicao_source(contagens: ContagensBasicas, caminho: Path) -> None:
+    """Gera o gráfico de barras de registros por fonte/rede (spec 001, tarefa 1.1.5)."""
+    distribuicao = contagens["distribuicao_source"]
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.bar(list(distribuicao.keys()), list(distribuicao.values()))
+    ax.set_xlabel("Fonte (rede)")
+    ax.set_ylabel("Registros")
+    ax.set_title("Distribuição de registros por fonte")
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+    fig.tight_layout()
+    fig.savefig(caminho)
+    plt.close(fig)
+
+
 def gerar_tabela_heterogeneidade_tex(exemplos: list[dict[str, str]], caminho: Path) -> None:
     """Escreve a tabela LaTeX de exemplos de heterogeneidade (tarefa 1.1.4).
 
@@ -361,6 +380,7 @@ def estatisticas_descritivas(
     diretorio_brutos: Path,
     diretorio_saida: Path = RESULTADOS_METRICAS,
     diretorio_latex_tabelas: Path = LATEX_TABELAS,
+    diretorio_figuras: Path = RESULTADOS_FIGURAS,
 ) -> ContagensBasicas:
     """Calcula e persiste as estatísticas descritivas da spec 001 (tarefas 1.1.1-1.1.4).
 
@@ -384,6 +404,9 @@ def estatisticas_descritivas(
         exemplos_heterogeneidade, diretorio_latex_tabelas / "tab_heterogeneidade_exemplos.tex"
     )
 
+    diretorio_figuras.mkdir(parents=True, exist_ok=True)
+    gerar_figura_distribuicao_source(contagens, diretorio_figuras / "distribuicao_source.png")
+
     logger.info(
         "EDA (1.1.1-1.1.4): %d registros, %d entradas no dicionário, %d exemplos de "
         "heterogeneidade. Estatísticas em %s, tabela em %s",
@@ -397,7 +420,7 @@ def estatisticas_descritivas(
 
 
 def main() -> None:
-    estatisticas_descritivas(DADOS_BRUTOS, RESULTADOS_METRICAS, LATEX_TABELAS)
+    estatisticas_descritivas(DADOS_BRUTOS, RESULTADOS_METRICAS, LATEX_TABELAS, RESULTADOS_FIGURAS)
 
 
 if __name__ == "__main__":

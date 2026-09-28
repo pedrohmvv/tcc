@@ -64,6 +64,7 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     dados_brutos = tmp_path / "dados" / "brutos"
     dados_brutos.mkdir(parents=True)
     resultados_metricas = tmp_path / "resultados" / "metricas"
+    resultados_figuras = tmp_path / "resultados" / "figuras"
     latex_tabelas = tmp_path / "latex" / "tcc_artigo" / "tabelas"
 
     produtos_brutos_variados_exemplo.to_csv(
@@ -74,7 +75,10 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     )
 
     contagens = analise_exploratoria.estatisticas_descritivas(
-        dados_brutos, diretorio_saida=resultados_metricas, diretorio_latex_tabelas=latex_tabelas
+        dados_brutos,
+        diretorio_saida=resultados_metricas,
+        diretorio_latex_tabelas=latex_tabelas,
+        diretorio_figuras=resultados_figuras,
     )
 
     assert contagens["total_registros"] == 4
@@ -102,6 +106,10 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
         encoding="utf-8"
     )
     assert "ARROZ BRANCO" in conteudo_tabela
+
+    caminho_figura = resultados_figuras / "distribuicao_source.png"
+    assert caminho_figura.exists()
+    assert caminho_figura.stat().st_size > 0
 
 
 def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(
