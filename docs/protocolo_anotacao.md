@@ -3,7 +3,7 @@
 **Projeto:** TCC — Entity Matching em Produtos de Supermercado com SLMs Fine-Tuned
 **Autor:** Pedro Henrique Medeiros Vieira
 **Última atualização:** 2026-08-13
-**Status:** `[DECISÃO PENDENTE]` regra de tamanho/unidade depende da granularidade do dicionário canônico (ver Seção 3)
+**Status:** regra de tamanho/unidade **resolvida** (ver Seção 3.4) — regime de granularidade confirmado por inspeção do dicionário canônico. A separação de regras por tipo de par (produto×canônico sem marca vs. produto×produto com marca) ainda está pendente de revisão de mérito (tarefa 1.3 do plano de desenvolvimento).
 
 ---
 
@@ -45,14 +45,13 @@ Dois itens são **match** se, e somente se, referem-se ao **mesmo produto físic
 | Mesma marca, categoria de produto diferente | "ITALAC LEITE 1L" vs. "ITALAC IOGURTE 170G" | **não-match** |
 | Tamanho/unidade diferente (**se dicionário for granular por SKU — ver 3.4**) | "LEITE ITALAC 500ML" vs. "LEITE ITALAC 1L" | **não-match** (nesse regime) |
 
-### 3.4 Regra condicional — tamanho e unidade
+### 3.4 Regra de tamanho e unidade — resolvida
 
-`[DECISÃO PENDENTE — resolver ao checar o dicionário canônico]`
+O dicionário canônico (`dados/brutos/dicionario_canonico.csv`) tem uma entrada por **produto genérico**, sem marca e sem tamanho (ex.: `ARROZ BRANCO`, `ARROZ INTEGRAL` — confirmado por inspeção direta do arquivo, 1.593 entradas de dados). Logo, para pares (produto, entrada canônica): **produtos de tamanhos diferentes são match**, desde que a categoria/variante coincida.
 
-- **Se o dicionário canônico tem uma entrada por tamanho/SKU** (ex.: "Leite Italac Integral 1L" e "Leite Italac Integral 500ml" são entradas distintas): produtos de tamanhos diferentes são **não-match**, mesmo que marca/variante coincidam.
-- **Se o dicionário canônico tem uma entrada por produto genérico** (ex.: "Leite Italac Integral" cobre todos os tamanhos): produtos de tamanhos diferentes são **match**, desde que marca/variante coincidam.
+Não é mais necessário registrar duas colunas de rótulo em paralelo — a regra acima é única e definitiva para esta fatia. Continua obrigatório registrar o tamanho/unidade como metadado do par (Seção 5), pois ele permanece relevante para a caracterização do ruído de PDV (Fase 1 do plano de desenvolvimento) mesmo não afetando mais a decisão de match.
 
-Até a definição, o anotador registra o tamanho como metadado do par e aplica **ambas as regras em paralelo** (duas colunas de rótulo), permitindo recalcular o conjunto quando a decisão for tomada, sem re-anotar do zero.
+`[NOTA]` A regra geral (3.1) e as regras de não-match baseadas em marca (3.3) foram escritas assumindo entradas canônicas com marca — o que não é o caso. Essa revisão de mérito está fora do escopo desta marcação e é tratada separadamente (tarefa 1.3 do plano de desenvolvimento).
 
 ### 3.5 Casos ambíguos → rótulo `incerto`
 

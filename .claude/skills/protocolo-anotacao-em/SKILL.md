@@ -21,12 +21,10 @@ Dois itens são **match** se, e somente se, referem-se ao mesmo produto físico 
 - Kit/promoção vs. unidade avulsa.
 - Mesma marca, categoria de produto diferente.
 
-## Regra condicional (tamanho/unidade) — `[DECISÃO PENDENTE]`
-Depende da granularidade do dicionário canônico:
-- Entrada por SKU/tamanho → tamanhos diferentes = não-match.
-- Entrada por produto genérico → tamanhos diferentes = match (se marca/variante coincidem).
+## Regra de tamanho/unidade — resolvida
+O dicionário canônico tem uma entrada por **produto genérico** (sem marca, sem tamanho). Logo, para pares (produto, entrada canônica): **tamanhos diferentes são match**, desde que a categoria/variante coincida. Não há mais duas regras alternativas a suportar em código — registrar tamanho/unidade como metadado do par continua obrigatório (ruído de PDV), mas não afeta mais a decisão de match.
 
-Código de anotação/validação deve suportar recalcular sob as duas regras até a definição (registrar tamanho como metadado do par, não descartar).
+`[NOTA]` A regra geral e as regras de não-match baseadas em marca acima assumem entradas canônicas com marca, o que não é o caso do dicionário real — essa revisão de mérito ainda está pendente (ver `docs/protocolo_anotacao.md` §3.4).
 
 ## Casos incertos
 Rótulo transitório `incerto`, adjudicado por consulta ao dicionário canônico oficial. Nunca entram no conjunto de teste final sem resolução.

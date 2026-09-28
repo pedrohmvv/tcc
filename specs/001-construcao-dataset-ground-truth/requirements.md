@@ -26,5 +26,6 @@ Produzir partições treino/validação/teste sem vazamento, combinando geraçã
 - [ ] Kappa de teste-reteste calculado sobre ≥50% do conjunto de teste (ADR-0005), reportado mesmo se abaixo de 0,75 (com discussão).
 - [ ] Nenhum produto do teste presente na base usada pelo Dataset Generator (checagem automatizada, não manual).
 
-## Regra condicional em aberto
-`[DECISÃO PENDENTE]` Se o dicionário canônico tiver uma entrada por tamanho/SKU, produtos de tamanhos diferentes são não-match; se tiver uma entrada por produto genérico, são match. `docs/protocolo_anotacao.md` documenta as duas versões da regra até a definição — o script de ingestão deve suportar recalcular os rótulos sob qualquer uma das duas regras sem re-anotar do zero.
+## Regra de granularidade — resolvida
+
+O dicionário canônico (`dados/brutos/dicionario_canonico.csv`) tem uma entrada por **produto genérico**, sem marca e sem tamanho (ex.: `ARROZ BRANCO`, `ARROZ INTEGRAL`) — confirmado por inspeção direta do arquivo (1.593 entradas de dados). Logo, para pares (produto, entrada canônica): **produtos de tamanhos diferentes são match**, desde que a categoria/variante coincida. A regra de "mesma marca" não se aplica a essa fatia, pois a entrada canônica não carrega marca — ela se aplica apenas à fatia suplementar (produto, produto), onde ambos os lados têm marca (ADR-0007). O script de ingestão não precisa suportar duas regras alternativas; a regra única acima é a que vale.
