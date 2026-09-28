@@ -28,8 +28,6 @@ Mapeamento canônico (implementar nesta direção; ver `CLAUDE.md` e `specs/`):
 | `05_finetuning.py` | 003 | LoRA do Cross-Encoder |
 | `06_avaliacao_exportacao.py` | 004 | métricas + exportação para `latex/tcc_artigo/` |
 
-Os arquivos no disco ainda podem usar nomes do template (`03_preprocessamento.py`, `04_treinamento_modelo.py`, `05_avaliacao_modelo.py`, `06_exportar_figuras_eps.py`). Isso é dívida de adaptação — não tratar esse I/O (churn, `.joblib` genérico, pasta `tex/`) como o alvo. Ao reescrever, seguir a tabela acima e a spec correspondente.
-
 Não criar subdiretórios fora das saídas esperadas em `dados/`, `modelos/`, `resultados/` e `latex/tcc_artigo/`.
 
 ## 3. Testes (`tests/`)
