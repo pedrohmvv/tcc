@@ -237,10 +237,11 @@ new-doc: ## ✨  Cria um novo tipo de documento — use TYPE=nome
 # =============================================================================
 
 .PHONY: lint
-lint: ## 🔎  Verifica estilo do código (ruff check)
+lint: ## 🔎  Verifica estilo do código (ruff check + ruff format --check, mesmo do CI)
 	@echo ""
 	@echo "  $(BOLD)$(CYAN)🔎  Analisando estilo do código...$(RESET)"
 	uv run ruff check $(SCRIPTS)/ tests/
+	uv run ruff format --check $(SCRIPTS)/ tests/
 	@echo "  $(GREEN)✅  Código aprovado pelo linter!$(RESET)"
 	@echo ""
 
