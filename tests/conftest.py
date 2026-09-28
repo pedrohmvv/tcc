@@ -31,6 +31,7 @@ def produtos_brutos_exemplo() -> pd.DataFrame:
                 "description": "Água Mineral Sem Gás Indaia 5l",
                 "unit": "UN",
                 "price": 13.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
                 "source": "ajuba_api",
                 "collected_at": "2026-09-10 12:38:09",
             },
@@ -39,8 +40,54 @@ def produtos_brutos_exemplo() -> pd.DataFrame:
                 "description": "Agua Mineral C/gas Grf Pet 1,5l Indaia",
                 "unit": "UN",
                 "price": 4.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
                 "source": "ajuba_api",
                 "collected_at": "2026-09-10 12:38:09",
+            },
+        ]
+    )
+
+
+@pytest.fixture
+def produtos_brutos_variados_exemplo() -> pd.DataFrame:
+    """Amostra com múltiplas fontes/estados, para testar distribuições (spec 001, tarefa 1.1.1)."""
+    return pd.DataFrame(
+        [
+            {
+                "product_id": 1,
+                "description": "Água Mineral Sem Gás Indaia 5l",
+                "unit": "UN",
+                "price": 13.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
+                "source": "ajuba_api",
+                "collected_at": "2026-09-10 12:38:09",
+            },
+            {
+                "product_id": 2,
+                "description": "Agua Mineral C/gas Grf Pet 1,5l Indaia",
+                "unit": "UN",
+                "price": 4.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
+                "source": "ajuba_api",
+                "collected_at": "2026-09-10 12:38:09",
+            },
+            {
+                "product_id": 3,
+                "description": "Arroz Branco Tio Joao 1kg",
+                "unit": "UN",
+                "price": 6.49,
+                "location": "CE, Fortaleza, Centro",
+                "source": "diniz_api",
+                "collected_at": "2026-09-10 12:40:00",
+            },
+            {
+                "product_id": 3,
+                "description": "Arroz Branco Tio Joao 1kg",
+                "unit": "UN",
+                "price": 6.79,
+                "location": "PI, Teresina, Centro",
+                "source": "guedes_api",
+                "collected_at": "2026-09-10 12:41:00",
             },
         ]
     )

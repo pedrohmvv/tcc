@@ -10,7 +10,23 @@ scripts/04_baselines.py.
 Ver AGENTS.md, seção 3, camada 2.
 """
 
+import importlib.util
+import os
+
 import pandas as pd
+
+_ROOT = os.path.join(os.path.dirname(__file__), "..")
+
+
+def _load(filename: str):
+    path = os.path.join(_ROOT, "scripts", filename)
+    spec = importlib.util.spec_from_file_location(filename, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+eda = _load("02_analise_exploratoria.py")
 
 
 def test_produtos_brutos_exemplo_tem_colunas_do_schema_alta(
@@ -43,3 +59,23 @@ def test_par_nao_match_exemplo_referencia_entrada_diferente(
     produto_bruto_nao_match, entrada_nao_match = par_nao_match_exemplo
     assert produto_bruto_match == produto_bruto_nao_match
     assert entrada_match != entrada_nao_match
+
+
+def test_calcular_contagens_basicas_reproduz_numeros_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    contagens = eda.calcular_contagens_basicas(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+
+    assert contagens["total_registros"] == 4
+    assert contagens["total_entradas_dicionario"] == 2
+    assert contagens["product_id_distintos"] == 3
+    assert contagens["descricoes_distintas"] == 3
+    assert contagens["distribuicao_source"] == {
+        "ajuba_api": 2,
+        "diniz_api": 1,
+        "guedes_api": 1,
+    }
+    assert contagens["distribuicao_estado"] == {"PB": 2, "CE": 1, "PI": 1}

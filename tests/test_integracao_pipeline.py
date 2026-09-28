@@ -4,10 +4,9 @@ test_integracao_pipeline.py — Camada 3: integração leve do pipeline (tmp_pat
 Ver AGENTS.md, seção 3, camada 3: "um teste de pipeline em tmp_path que
 verifica a passagem de artefatos 01→06".
 
-Hoje só o script 01 está implementado (validação de brutos); os demais
-(02-06) são esqueletos que levantam NotImplementedError apontando para a
-spec correspondente (specs/001 a 004). Os testes abaixo cobrem o que já
-existe e documentam, via xfail explícito, o que falta.
+Scripts 01 e 02 já implementados (validação de brutos e contagens
+básicas da EDA, spec 001 tarefa 1.1.1); 03-06 são esqueletos que
+levantam NotImplementedError apontando para a spec correspondente.
 """
 
 import importlib.util
@@ -15,7 +14,6 @@ import os
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 _ROOT = os.path.join(os.path.dirname(__file__), "..")
 
@@ -56,10 +54,34 @@ def test_script_01_valida_brutos_reais_em_tmp_path(
     assert len(df_dicionario) == len(dicionario_canonico_exemplo)
 
 
-@pytest.mark.xfail(
-    reason="scripts/02_analise_exploratoria.py é esqueleto — spec 001 ainda não implementada",
-    raises=NotImplementedError,
-    strict=True,
-)
-def test_script_02_eda_ainda_nao_implementado() -> None:
-    analise_exploratoria.main()
+def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
+    tmp_path: Path,
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    """02_analise_exploratoria.py deve ler os brutos e escrever as métricas de 1.1.1."""
+    dados_brutos = tmp_path / "dados" / "brutos"
+    dados_brutos.mkdir(parents=True)
+    resultados_metricas = tmp_path / "resultados" / "metricas"
+
+    produtos_brutos_variados_exemplo.to_csv(
+        dados_brutos / "todos_mercados_2026-01-01.csv", index=False
+    )
+    dicionario_canonico_exemplo.to_csv(
+        dados_brutos / "dicionario_canonico.csv", sep=";", index=False
+    )
+
+    contagens = analise_exploratoria.estatisticas_descritivas(
+        dados_brutos, diretorio_saida=resultados_metricas
+    )
+
+    assert contagens["total_registros"] == 4
+    assert contagens["total_entradas_dicionario"] == 2
+
+    df_escalares = pd.read_csv(resultados_metricas / "estatisticas_descritivas.csv")
+    linha = df_escalares.set_index("metrica")["valor"]
+    assert int(linha["total_registros"]) == 4
+    assert int(linha["total_entradas_dicionario"]) == 2
+
+    df_distribuicoes = pd.read_csv(resultados_metricas / "distribuicoes_categoricas.csv")
+    assert set(df_distribuicoes["dimensao"]) == {"source", "location", "estado"}
