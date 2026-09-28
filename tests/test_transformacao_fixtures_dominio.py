@@ -79,3 +79,16 @@ def test_calcular_contagens_basicas_reproduz_numeros_da_amostra(
         "guedes_api": 1,
     }
     assert contagens["distribuicao_estado"] == {"PB": 2, "CE": 1, "PI": 1}
+
+
+def test_caracterizar_ruido_pdv_reproduz_contagens_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    ruido = eda.caracterizar_ruido_pdv(produtos_brutos_variados_exemplo)
+
+    assert ruido == {
+        "unidade_colada": 4,
+        "caixa_alta": 0,
+        "sem_acentuacao": 3,
+        "abreviatura": 1,
+    }

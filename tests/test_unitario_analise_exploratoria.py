@@ -33,3 +33,44 @@ class TestExtrairEstado:
     def test_location_sem_virgula_levanta_value_error(self) -> None:
         with pytest.raises(ValueError, match="location"):
             eda.extrair_estado("PB")
+
+
+class TestTemUnidadeColada:
+    def test_detecta_grama_colada_ao_numero(self) -> None:
+        assert eda.tem_unidade_colada("Mini Sorvete Kibon Chicabon Caixa 92G") is True
+
+    def test_detecta_mililitro_colado_ao_numero(self) -> None:
+        assert eda.tem_unidade_colada("Sidra Celebrate 660ml") is True
+
+    def test_nao_detecta_quando_ha_espaco_entre_numero_e_unidade(self) -> None:
+        assert eda.tem_unidade_colada("Sidra Celebrate 660 ml") is False
+
+    def test_nao_detecta_descricao_sem_unidade(self) -> None:
+        assert eda.tem_unidade_colada("Bisteca Bovina do Peito Dianteiro") is False
+
+
+class TestEstaEmCaixaAlta:
+    def test_detecta_descricao_totalmente_maiuscula(self) -> None:
+        assert eda.esta_em_caixa_alta("MAIONESE HEINZ BACON 215G") is True
+
+    def test_nao_detecta_descricao_com_case_misto(self) -> None:
+        assert eda.esta_em_caixa_alta("Leite em Pó Integral Instantâneo Ninho 380g") is False
+
+
+class TestEstaSemAcentuacao:
+    def test_detecta_palavra_que_deveria_ter_acento(self) -> None:
+        assert eda.esta_sem_acentuacao("Cafe 3 Coracoes Portinari Cafe 1942 250g") is True
+
+    def test_nao_detecta_quando_ha_acentuacao(self) -> None:
+        assert eda.esta_sem_acentuacao("Café em Cápsula Torrado e Moído Intenso") is False
+
+
+class TestTemAbreviatura:
+    def test_detecta_barra_de_abreviacao(self) -> None:
+        assert eda.tem_abreviatura("Canjica C/ Pacoca 200g") is True
+
+    def test_detecta_ponto_de_truncamento(self) -> None:
+        assert eda.tem_abreviatura("Alho 200g (aprox. 3und.)") is True
+
+    def test_nao_detecta_descricao_sem_abreviatura(self) -> None:
+        assert eda.tem_abreviatura("Coco Ralado Menina 100g") is False

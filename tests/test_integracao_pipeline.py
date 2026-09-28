@@ -85,3 +85,8 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
 
     df_distribuicoes = pd.read_csv(resultados_metricas / "distribuicoes_categoricas.csv")
     assert set(df_distribuicoes["dimensao"]) == {"source", "location", "estado"}
+
+    df_ruido = pd.read_csv(resultados_metricas / "taxonomia_ruido.csv")
+    linha_ruido = df_ruido.set_index("categoria")["contagem"]
+    assert int(linha_ruido["unidade_colada"]) == 4
+    assert int(linha_ruido["sem_acentuacao"]) == 3
