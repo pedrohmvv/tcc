@@ -145,6 +145,12 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     linha_inversoes = df_inversoes.set_index("metrica")["valor"]
     assert int(linha_inversoes["grupos_com_inversao_entre_lojas"]) == 0
 
+    df_formas_unidade = pd.read_csv(resultados_metricas / "formas_unidade.csv")
+    por_forma = df_formas_unidade.set_index("forma")["contagem"]
+    assert int(por_forma["l"]) == 2
+    assert int(por_forma["kg"]) == 2
+    assert (latex_tabelas / "tab_formas_unidade.tex").exists()
+
 
 def test_gerar_tabela_comprimentos_tex_escreve_arquivo_com_estatisticas(
     tmp_path: Path,
@@ -228,6 +234,18 @@ def test_gerar_figura_jaccard_escreve_arquivo_png(
 
     assert caminho_png.exists()
     assert caminho_png.stat().st_size > 0
+
+
+def test_gerar_tabela_formas_unidade_tex_escreve_arquivo(tmp_path: Path) -> None:
+    formas = [{"unidade_canonica": "grama", "forma": "GR", "contagem": 1131}]
+    caminho_tex = tmp_path / "tab_formas_unidade.tex"
+
+    analise_exploratoria.gerar_tabela_formas_unidade_tex(formas, caminho_tex)
+
+    conteudo = caminho_tex.read_text(encoding="utf-8")
+    assert r"\label{tab:formas-unidade}" in conteudo
+    assert "grama" in conteudo
+    assert "1131" in conteudo
 
 
 def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(

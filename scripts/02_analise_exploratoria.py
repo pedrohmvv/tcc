@@ -514,6 +514,42 @@ def gerar_figura_jaccard_tex(caminho: Path, nome_arquivo_png: str) -> None:
     caminho.write_text(conteudo, encoding="utf-8")
 
 
+_FORMA_UNIDADE_RE = re.compile(r"\d(ml|gr|kg|und|un|lt|g|l)\b", re.IGNORECASE)
+_CANONICAL_POR_FORMA = {
+    "g": "grama",
+    "gr": "grama",
+    "ml": "mililitro",
+    "kg": "quilograma",
+    "l": "litro",
+    "lt": "litro",
+    "un": "unidade",
+    "und": "unidade",
+}
+
+
+def contar_formas_de_unidade(df_produtos: pd.DataFrame) -> list[dict[str, object]]:
+    """Conta grafias distintas (surface forms) de cada unidade de medida colada à quantidade.
+
+    Evidencia a "representação alternativa de unidades de medida" citada em
+    `main.tex` (ex.: grama grafado como g/G/GR/gr; reusa o mesmo padrão de
+    `tem_unidade_colada`, mas aqui captura e conta a grafia observada em vez
+    de só detectar presença).
+    """
+    contador: Counter[str] = Counter()
+    for descricao in df_produtos["description"]:
+        for correspondencia in _FORMA_UNIDADE_RE.finditer(str(descricao)):
+            contador[correspondencia.group(1)] += 1
+
+    return [
+        {
+            "unidade_canonica": _CANONICAL_POR_FORMA.get(forma.lower(), forma.lower()),
+            "forma": forma,
+            "contagem": contagem,
+        }
+        for forma, contagem in contador.most_common()
+    ]
+
+
 def detectar_inversoes_de_ordem(df_produtos: pd.DataFrame) -> dict[str, object]:
     """Taxa de grupos com o mesmo multiconjunto de tokens em ordem diferente entre lojas.
 
@@ -545,6 +581,34 @@ def detectar_inversoes_de_ordem(df_produtos: pd.DataFrame) -> dict[str, object]:
         "grupos_com_inversao_entre_lojas": len(grupos_com_inversao),
         "taxa_inversao_entre_lojas": taxa,
     }
+
+
+def gerar_tabela_formas_unidade_tex(formas: list[dict[str, object]], caminho: Path) -> None:
+    """Escreve a tabela LaTeX de grafias de unidade de medida (EDA textual, item 5)."""
+    linhas_tabela = "\n".join(
+        f"{escapar_latex(str(linha['unidade_canonica']))} & "
+        f"{escapar_latex(str(linha['forma']))} & {linha['contagem']} \\\\"
+        for linha in formas
+    )
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Grafias observadas por unidade de medida}\n"
+        "\\label{tab:formas-unidade}\n"
+        "\\small\n"
+        "\\begin{tabular}{llr}\n"
+        "\\toprule\n"
+        "Unidade & Grafia & Contagem \\\\\n"
+        "\\midrule\n"
+        f"{linhas_tabela}\n"
+        "\\bottomrule\n"
+        "\\end{tabular}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{table}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
 
 
 def gerar_tabela_comprimentos_tex(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
@@ -918,6 +982,7 @@ def estatisticas_descritivas(
     vocabulario = medir_vocabulario(df_produtos, df_dicionario)
     jaccard_lojas = calcular_jaccard_entre_lojas(df_produtos)
     inversoes_ordem = detectar_inversoes_de_ordem(df_produtos)
+    formas_unidade = contar_formas_de_unidade(df_produtos)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
@@ -931,6 +996,7 @@ def estatisticas_descritivas(
     _salvar_vocabulario(vocabulario, diretorio_saida / "vocabulario.csv")
     jaccard_lojas.to_csv(diretorio_saida / "jaccard_lojas.csv")
     _salvar_inversoes_ordem(inversoes_ordem, diretorio_saida / "inversoes_ordem.csv")
+    pd.DataFrame(formas_unidade).to_csv(diretorio_saida / "formas_unidade.csv", index=False)
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
     gerar_tabela_heterogeneidade_tex(
@@ -943,6 +1009,9 @@ def estatisticas_descritivas(
         unigramas, bigramas, trigramas, diretorio_latex_tabelas / "tab_ngramas.tex"
     )
     gerar_tabela_vocabulario_tex(vocabulario, diretorio_latex_tabelas / "tab_vocabulario.tex")
+    gerar_tabela_formas_unidade_tex(
+        formas_unidade, diretorio_latex_tabelas / "tab_formas_unidade.tex"
+    )
 
     diretorio_figuras.mkdir(parents=True, exist_ok=True)
     gerar_figura_distribuicao_source(contagens, diretorio_figuras / "distribuicao_source.png")

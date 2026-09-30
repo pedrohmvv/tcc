@@ -200,6 +200,18 @@ def test_detectar_inversoes_de_ordem_ignora_mesma_ordem(
     assert resultado["grupos_com_inversao_entre_lojas"] == 0
 
 
+def test_contar_formas_de_unidade_reproduz_grafias_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.contar_formas_de_unidade(produtos_brutos_variados_exemplo)
+    por_forma = {linha["forma"]: linha for linha in resultado}
+
+    assert por_forma["l"]["contagem"] == 2
+    assert por_forma["l"]["unidade_canonica"] == "litro"
+    assert por_forma["kg"]["contagem"] == 2
+    assert por_forma["kg"]["unidade_canonica"] == "quilograma"
+
+
 def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
     produtos_brutos_variados_exemplo: pd.DataFrame,
     dicionario_canonico_exemplo: pd.DataFrame,
