@@ -66,6 +66,7 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     resultados_metricas = tmp_path / "resultados" / "metricas"
     resultados_figuras = tmp_path / "resultados" / "figuras"
     latex_tabelas = tmp_path / "latex" / "tcc_artigo" / "tabelas"
+    latex_figuras = tmp_path / "latex" / "tcc_artigo" / "figuras"
 
     produtos_brutos_variados_exemplo.to_csv(
         dados_brutos / "todos_mercados_2026-01-01.csv", index=False
@@ -79,6 +80,7 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
         diretorio_saida=resultados_metricas,
         diretorio_latex_tabelas=latex_tabelas,
         diretorio_figuras=resultados_figuras,
+        diretorio_latex_figuras=latex_figuras,
     )
 
     assert contagens["total_registros"] == 4
@@ -112,6 +114,51 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     caminho_figura = resultados_figuras / "distribuicao_source.png"
     assert caminho_figura.exists()
     assert caminho_figura.stat().st_size > 0
+
+    df_comprimentos = pd.read_csv(resultados_metricas / "comprimento_descricoes.csv")
+    assert set(df_comprimentos["serie"]) == {
+        "caracteres_bruto",
+        "caracteres_dicionario",
+        "tokens_bruto",
+        "tokens_dicionario",
+    }
+
+    assert (latex_tabelas / "tab_comprimento_descricoes.tex").exists()
+    assert (latex_figuras / "fig_comprimento_descricoes.png").exists()
+    assert (latex_figuras / "fig_comprimento_descricoes.tex").exists()
+
+
+def test_gerar_tabela_comprimentos_tex_escreve_arquivo_com_estatisticas(
+    tmp_path: Path,
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    comparacao = analise_exploratoria.comparar_comprimentos(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+    caminho_tex = tmp_path / "tab_comprimento_descricoes.tex"
+
+    analise_exploratoria.gerar_tabela_comprimentos_tex(comparacao, caminho_tex)
+
+    conteudo = caminho_tex.read_text(encoding="utf-8")
+    assert r"\label{tab:comprimento-descricoes}" in conteudo
+    assert "29.5" in conteudo
+    assert "12.0" in conteudo
+
+
+def test_gerar_figura_comprimentos_escreve_arquivo_png(
+    tmp_path: Path,
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    caminho_png = tmp_path / "fig_comprimento_descricoes.png"
+
+    analise_exploratoria.gerar_figura_comprimentos(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo, caminho_png
+    )
+
+    assert caminho_png.exists()
+    assert caminho_png.stat().st_size > 0
 
 
 def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(

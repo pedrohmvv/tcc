@@ -111,6 +111,21 @@ def test_caracterizar_match_score_reproduz_estatisticas_da_amostra(
     assert distribuicao["mediana"] == pytest.approx(0.795)
 
 
+def test_comparar_comprimentos_reproduz_estatisticas_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    comparacao = eda.comparar_comprimentos(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+
+    assert comparacao["caracteres_bruto"]["mean"] == pytest.approx(29.5)
+    assert comparacao["caracteres_bruto"]["count"] == 4
+    assert comparacao["caracteres_dicionario"]["mean"] == pytest.approx(12.0)
+    assert comparacao["tokens_bruto"]["mean"] == pytest.approx(6.25)
+    assert comparacao["tokens_dicionario"]["mean"] == pytest.approx(2.0)
+
+
 def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
     produtos_brutos_variados_exemplo: pd.DataFrame,
     dicionario_canonico_exemplo: pd.DataFrame,

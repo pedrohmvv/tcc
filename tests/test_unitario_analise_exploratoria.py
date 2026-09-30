@@ -84,6 +84,26 @@ class TestEscaparLatex:
         assert eda.escapar_latex("Arroz Branco") == "Arroz Branco"
 
 
+class TestTokenizar:
+    def test_mantem_numero_decimal_com_virgula_como_token_unico(self) -> None:
+        assert eda.tokenizar("Suco de Uva 1,35L", normalizar=False) == [
+            "Suco",
+            "de",
+            "Uva",
+            "1,35",
+            "L",
+        ]
+
+    def test_mantem_numero_decimal_com_ponto_como_token_unico(self) -> None:
+        assert eda.tokenizar("Oleo 0.9L", normalizar=False) == ["Oleo", "0.9", "L"]
+
+    def test_normalizar_remove_acentos_e_uppercase_antes_de_tokenizar(self) -> None:
+        assert eda.tokenizar("Água Mineral", normalizar=True) == ["AGUA", "MINERAL"]
+
+    def test_normalizar_false_preserva_acentos_e_caixa_originais(self) -> None:
+        assert eda.tokenizar("Água Mineral", normalizar=False) == ["Água", "Mineral"]
+
+
 class TestTemAbreviatura:
     def test_detecta_barra_de_abreviacao(self) -> None:
         assert eda.tem_abreviatura("Canjica C/ Pacoca 200g") is True

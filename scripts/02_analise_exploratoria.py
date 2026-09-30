@@ -69,6 +69,7 @@ DADOS_BRUTOS = Path("dados/brutos")
 RESULTADOS_METRICAS = Path("resultados/metricas")
 RESULTADOS_FIGURAS = Path("resultados/figuras")
 LATEX_TABELAS = Path("latex/tcc_artigo/tabelas")
+LATEX_FIGURAS = Path("latex/tcc_artigo/figuras")
 
 
 def extrair_estado(location: str) -> str:
@@ -114,6 +115,21 @@ def normalizar_para_comparacao(texto: str) -> str:
     """Uppercase e remove acentos — comparação tolerante à variação de PDV."""
     sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
     return sem_acento.upper().strip()
+
+
+_TOKEN_RE = re.compile(r"[A-Za-zÀ-ÿ0-9]+(?:[.,][0-9]+)?")
+
+
+def tokenizar(texto: str, normalizar: bool = False) -> list[str]:
+    """Tokeniza uma descrição, preservando números decimais (`1,35`, `0.9`) como um único token.
+
+    `normalizar=True` aplica `normalizar_para_comparacao` antes de tokenizar
+    (uppercase, sem acento) — usado para vocabulário/n-gramas comparáveis
+    entre lojas; `normalizar=False` preserva o texto original, para exibir
+    exemplos reais ao leitor.
+    """
+    texto_para_tokenizar = normalizar_para_comparacao(texto) if normalizar else texto
+    return _TOKEN_RE.findall(texto_para_tokenizar)
 
 
 def tem_abreviatura(description: str) -> bool:
@@ -180,6 +196,118 @@ _LATEX_ESCAPES = {
 def escapar_latex(texto: str) -> str:
     """Escapa caracteres especiais do LaTeX (`AGENTS.md` §4: preservar escapes)."""
     return "".join(_LATEX_ESCAPES.get(caractere, caractere) for caractere in texto)
+
+
+class ComparacaoComprimentos(TypedDict):
+    """Estatísticas descritivas de comprimento, bruto vs. dicionário (spec 001, EDA textual)."""
+
+    caracteres_bruto: dict[str, float]
+    caracteres_dicionario: dict[str, float]
+    tokens_bruto: dict[str, float]
+    tokens_dicionario: dict[str, float]
+
+
+def comparar_comprimentos(
+    df_produtos: pd.DataFrame, df_dicionario: pd.DataFrame
+) -> ComparacaoComprimentos:
+    """Compara o comprimento (caracteres e tokens) das descrições brutas com o dicionário.
+
+    Evidencia a diferença de granularidade descritiva entre a base de PDV e
+    o dicionário canônico (`main.tex`, "Variação de granularidade descritiva
+    entre lojas").
+    """
+    caracteres_bruto = df_produtos["description"].str.len()
+    caracteres_dicionario = df_dicionario["desc_alim"].str.len()
+    tokens_bruto = df_produtos["description"].map(lambda texto: len(tokenizar(texto)))
+    tokens_dicionario = df_dicionario["desc_alim"].map(lambda texto: len(tokenizar(texto)))
+    return {
+        "caracteres_bruto": caracteres_bruto.describe().to_dict(),
+        "caracteres_dicionario": caracteres_dicionario.describe().to_dict(),
+        "tokens_bruto": tokens_bruto.describe().to_dict(),
+        "tokens_dicionario": tokens_dicionario.describe().to_dict(),
+    }
+
+
+def gerar_tabela_comprimentos_tex(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
+    """Escreve a tabela LaTeX de comprimento de descrições (EDA textual, item 1)."""
+    linhas_por_metrica = [
+        ("Média", "mean"),
+        ("Desvio-padrão", "std"),
+        ("Mediana", "50%"),
+        ("Mínimo", "min"),
+        ("Máximo", "max"),
+    ]
+    linhas_tabela = "\n".join(
+        f"{rotulo} & {comparacao['caracteres_bruto'][chave]:.1f} & "
+        f"{comparacao['caracteres_dicionario'][chave]:.1f} & "
+        f"{comparacao['tokens_bruto'][chave]:.1f} & "
+        f"{comparacao['tokens_dicionario'][chave]:.1f} \\\\"
+        for rotulo, chave in linhas_por_metrica
+    )
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Comprimento das descrições: base bruta vs. dicionário canônico}\n"
+        "\\label{tab:comprimento-descricoes}\n"
+        "\\small\n"
+        "\\begin{tabular}{lrrrr}\n"
+        "\\toprule\n"
+        " & \\multicolumn{2}{c}{Caracteres} & \\multicolumn{2}{c}{Tokens} \\\\\n"
+        "Estatística & Bruto & Dicionário & Bruto & Dicionário \\\\\n"
+        "\\midrule\n"
+        f"{linhas_tabela}\n"
+        "\\bottomrule\n"
+        "\\end{tabular}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{table}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
+
+
+def gerar_figura_comprimentos(
+    df_produtos: pd.DataFrame, df_dicionario: pd.DataFrame, caminho: Path
+) -> None:
+    """Gera histogramas sobrepostos de comprimento (caracteres/tokens), bruto vs. dicionário."""
+    caracteres_bruto = df_produtos["description"].str.len()
+    caracteres_dicionario = df_dicionario["desc_alim"].str.len()
+    tokens_bruto = df_produtos["description"].map(lambda texto: len(tokenizar(texto)))
+    tokens_dicionario = df_dicionario["desc_alim"].map(lambda texto: len(tokenizar(texto)))
+
+    fig, (ax_caracteres, ax_tokens) = plt.subplots(1, 2, figsize=(10, 4))
+
+    ax_caracteres.hist(caracteres_bruto, bins=20, alpha=0.6, density=True, label="Bruto")
+    ax_caracteres.hist(caracteres_dicionario, bins=20, alpha=0.6, density=True, label="Dicionário")
+    ax_caracteres.set_xlabel("Caracteres")
+    ax_caracteres.set_ylabel("Densidade")
+    ax_caracteres.legend()
+
+    ax_tokens.hist(tokens_bruto, bins=15, alpha=0.6, density=True, label="Bruto")
+    ax_tokens.hist(tokens_dicionario, bins=15, alpha=0.6, density=True, label="Dicionário")
+    ax_tokens.set_xlabel("Tokens")
+    ax_tokens.legend()
+
+    fig.suptitle("Comprimento das descrições: base bruta vs. dicionário canônico")
+    fig.tight_layout()
+    fig.savefig(caminho)
+    plt.close(fig)
+
+
+def gerar_figura_comprimentos_tex(caminho: Path, nome_arquivo_png: str) -> None:
+    """Escreve o wrapper LaTeX (`figure` + `\\includegraphics`) da figura de comprimentos."""
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{figure}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Comprimento das descrições: base bruta vs. dicionário canônico}\n"
+        "\\label{fig:comprimento-descricoes}\n"
+        f"\\includegraphics[width=\\textwidth]{{{nome_arquivo_png}}}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{figure}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
 
 
 def selecionar_exemplos_heterogeneidade(
@@ -366,6 +494,21 @@ def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> N
     pd.DataFrame(linhas).to_csv(caminho, index=False)
 
 
+def _salvar_comparacao_comprimentos(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
+    series: list[tuple[str, dict[str, float]]] = [
+        ("caracteres_bruto", comparacao["caracteres_bruto"]),
+        ("caracteres_dicionario", comparacao["caracteres_dicionario"]),
+        ("tokens_bruto", comparacao["tokens_bruto"]),
+        ("tokens_dicionario", comparacao["tokens_dicionario"]),
+    ]
+    linhas = [
+        {"serie": nome_serie, "metrica": metrica, "valor": valor}
+        for nome_serie, serie in series
+        for metrica, valor in serie.items()
+    ]
+    pd.DataFrame(linhas).to_csv(caminho, index=False)
+
+
 def _salvar_match_score(distribuicao: DistribuicaoMatchScore, caminho: Path) -> None:
     linhas = [
         {"metrica": "contagem", "valor": distribuicao["contagem"]},
@@ -413,8 +556,9 @@ def estatisticas_descritivas(
     diretorio_saida: Path = RESULTADOS_METRICAS,
     diretorio_latex_tabelas: Path = LATEX_TABELAS,
     diretorio_figuras: Path = RESULTADOS_FIGURAS,
+    diretorio_latex_figuras: Path = LATEX_FIGURAS,
 ) -> ContagensBasicas:
-    """Calcula e persiste as estatísticas descritivas da spec 001 (tarefas 1.1.1-1.1.4).
+    """Calcula e persiste as estatísticas descritivas da spec 001 (EDA, incl. tarefas 1.1.1-1.1.4).
 
     Ver specs/001-construcao-dataset-ground-truth/requirements.md.
     """
@@ -424,35 +568,53 @@ def estatisticas_descritivas(
     ruido = caracterizar_ruido_pdv(df_produtos)
     distribuicao_match_score = caracterizar_match_score(df_produtos)
     exemplos_heterogeneidade = selecionar_exemplos_heterogeneidade(df_produtos, df_dicionario)
+    comparacao_comprimentos = comparar_comprimentos(df_produtos, df_dicionario)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
     _salvar_distribuicoes(contagens, diretorio_saida / "distribuicoes_categoricas.csv")
     _salvar_ruido_pdv(ruido, contagens["total_registros"], diretorio_saida / "taxonomia_ruido.csv")
     _salvar_match_score(distribuicao_match_score, diretorio_saida / "distribuicao_match_score.csv")
+    _salvar_comparacao_comprimentos(
+        comparacao_comprimentos, diretorio_saida / "comprimento_descricoes.csv"
+    )
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
     gerar_tabela_heterogeneidade_tex(
         exemplos_heterogeneidade, diretorio_latex_tabelas / "tab_heterogeneidade_exemplos.tex"
     )
+    gerar_tabela_comprimentos_tex(
+        comparacao_comprimentos, diretorio_latex_tabelas / "tab_comprimento_descricoes.tex"
+    )
 
     diretorio_figuras.mkdir(parents=True, exist_ok=True)
     gerar_figura_distribuicao_source(contagens, diretorio_figuras / "distribuicao_source.png")
 
+    diretorio_latex_figuras.mkdir(parents=True, exist_ok=True)
+    gerar_figura_comprimentos(
+        df_produtos, df_dicionario, diretorio_latex_figuras / "fig_comprimento_descricoes.png"
+    )
+    gerar_figura_comprimentos_tex(
+        diretorio_latex_figuras / "fig_comprimento_descricoes.tex", "fig_comprimento_descricoes.png"
+    )
+
     logger.info(
-        "EDA (1.1.1-1.1.4): %d registros, %d entradas no dicionário, %d exemplos de "
-        "heterogeneidade. Estatísticas em %s, tabela em %s",
+        "EDA: %d registros, %d entradas no dicionário, %d exemplos de heterogeneidade. "
+        "Estatísticas em %s, tabelas em %s, figuras em %s",
         contagens["total_registros"],
         contagens["total_entradas_dicionario"],
         len(exemplos_heterogeneidade),
         diretorio_saida,
         diretorio_latex_tabelas,
+        diretorio_latex_figuras,
     )
     return contagens
 
 
 def main() -> None:
-    estatisticas_descritivas(DADOS_BRUTOS, RESULTADOS_METRICAS, LATEX_TABELAS, RESULTADOS_FIGURAS)
+    estatisticas_descritivas(
+        DADOS_BRUTOS, RESULTADOS_METRICAS, LATEX_TABELAS, RESULTADOS_FIGURAS, LATEX_FIGURAS
+    )
 
 
 if __name__ == "__main__":
