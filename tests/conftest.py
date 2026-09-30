@@ -109,6 +109,32 @@ def dicionario_canonico_exemplo() -> pd.DataFrame:
 
 
 @pytest.fixture
+def produtos_brutos_inversao_exemplo() -> pd.DataFrame:
+    """Par com o mesmo multiconjunto de tokens em ordem diferente, lojas diferentes.
+
+    Fixture dedicada (não estende `produtos_brutos_variados_exemplo`) para
+    isolar o teste de detecção de inversão de ordem sem recalcular as
+    dezenas de asserções numéricas já fixadas sobre a outra fixture.
+    """
+    return pd.DataFrame(
+        [
+            {
+                "product_id": 10,
+                "description": "Suco Uva Del Valle 1,5L",
+                "source": "ajuba_api",
+                "location": "PB, João Pessoa, Pedro Gondim",
+            },
+            {
+                "product_id": 11,
+                "description": "Suco Del Valle Uva 1,5l",
+                "source": "diniz_api",
+                "location": "CE, Fortaleza, Centro",
+            },
+        ]
+    )
+
+
+@pytest.fixture
 def par_match_exemplo() -> tuple[str, str]:
     """Par (produto bruto, entrada canônica) que deve ser rotulado como match."""
     return ("Água Mineral Sem Gás Indaia 5l", "AGUA MINERAL")

@@ -180,6 +180,26 @@ def test_calcular_jaccard_entre_lojas_reproduz_similaridade_da_amostra(
     assert matriz.loc["ajuba_api", "ajuba_api"] == pytest.approx(1.0)
 
 
+def test_detectar_inversoes_de_ordem_identifica_grupo_com_tokens_reordenados(
+    produtos_brutos_inversao_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.detectar_inversoes_de_ordem(produtos_brutos_inversao_exemplo)
+
+    assert resultado["grupos_totais"] == 1
+    assert resultado["grupos_com_inversao_entre_lojas"] == 1
+    assert resultado["taxa_inversao_entre_lojas"] == pytest.approx(1.0)
+
+
+def test_detectar_inversoes_de_ordem_ignora_mesma_ordem(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    # "Arroz Branco Tio Joao 1kg" se repete com a MESMA ordem em duas lojas
+    # (diniz_api e guedes_api) — não é inversão, é a mesma descrição exata.
+    resultado = eda.detectar_inversoes_de_ordem(produtos_brutos_variados_exemplo)
+
+    assert resultado["grupos_com_inversao_entre_lojas"] == 0
+
+
 def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
     produtos_brutos_variados_exemplo: pd.DataFrame,
     dicionario_canonico_exemplo: pd.DataFrame,

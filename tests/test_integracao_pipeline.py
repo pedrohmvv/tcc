@@ -141,6 +141,10 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     assert (latex_figuras / "fig_jaccard_lojas.png").exists()
     assert (latex_figuras / "fig_jaccard_lojas.tex").exists()
 
+    df_inversoes = pd.read_csv(resultados_metricas / "inversoes_ordem.csv")
+    linha_inversoes = df_inversoes.set_index("metrica")["valor"]
+    assert int(linha_inversoes["grupos_com_inversao_entre_lojas"]) == 0
+
 
 def test_gerar_tabela_comprimentos_tex_escreve_arquivo_com_estatisticas(
     tmp_path: Path,

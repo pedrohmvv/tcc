@@ -514,6 +514,39 @@ def gerar_figura_jaccard_tex(caminho: Path, nome_arquivo_png: str) -> None:
     caminho.write_text(conteudo, encoding="utf-8")
 
 
+def detectar_inversoes_de_ordem(df_produtos: pd.DataFrame) -> dict[str, object]:
+    """Taxa de grupos com o mesmo multiconjunto de tokens em ordem diferente entre lojas.
+
+    Fecha a lacuna deixada em aberto na tarefa 1.1.2: a inversão de ordem só
+    é observável comparando um par de descrições do mesmo produto, o que
+    não exige a blocagem da tarefa 1.2 — basta agrupar pelo multiconjunto
+    de tokens normalizados. Descrições idênticas repetidas em lojas
+    diferentes (mesma ordem) não contam como inversão.
+    """
+    tokens_por_descricao = df_produtos["description"].map(
+        lambda texto: tokenizar(texto, normalizar=True)
+    )
+    chave_multiconjunto = tokens_por_descricao.map(lambda tokens: " ".join(sorted(tokens)))
+    ordem_original = tokens_por_descricao.map(lambda tokens: " ".join(tokens))
+
+    agrupado = (
+        df_produtos.assign(_chave=chave_multiconjunto, _ordem=ordem_original)
+        .groupby("_chave")
+        .agg(n_ordens_distintas=("_ordem", "nunique"), n_fontes_distintas=("source", "nunique"))
+    )
+
+    grupos_com_inversao = agrupado[
+        (agrupado["n_ordens_distintas"] > 1) & (agrupado["n_fontes_distintas"] > 1)
+    ]
+    total_grupos = len(agrupado)
+    taxa = len(grupos_com_inversao) / total_grupos if total_grupos else 0.0
+    return {
+        "grupos_totais": total_grupos,
+        "grupos_com_inversao_entre_lojas": len(grupos_com_inversao),
+        "taxa_inversao_entre_lojas": taxa,
+    }
+
+
 def gerar_tabela_comprimentos_tex(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
     """Escreve a tabela LaTeX de comprimento de descrições (EDA textual, item 1)."""
     linhas_por_metrica = [
@@ -780,6 +813,11 @@ def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> N
     pd.DataFrame(linhas).to_csv(caminho, index=False)
 
 
+def _salvar_inversoes_ordem(resultado: dict[str, object], caminho: Path) -> None:
+    linhas = [{"metrica": chave, "valor": valor} for chave, valor in resultado.items()]
+    pd.DataFrame(linhas).to_csv(caminho, index=False)
+
+
 def _salvar_vocabulario(vocabulario: Vocabulario, caminho: Path) -> None:
     linhas = [{"metrica": chave, "valor": valor} for chave, valor in vocabulario.items()]
     pd.DataFrame(linhas).to_csv(caminho, index=False)
@@ -879,6 +917,7 @@ def estatisticas_descritivas(
     trigramas = contar_ngramas(df_produtos, n=3, top_k=10)
     vocabulario = medir_vocabulario(df_produtos, df_dicionario)
     jaccard_lojas = calcular_jaccard_entre_lojas(df_produtos)
+    inversoes_ordem = detectar_inversoes_de_ordem(df_produtos)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
@@ -891,6 +930,7 @@ def estatisticas_descritivas(
     _salvar_ngramas(unigramas, bigramas, trigramas, diretorio_saida / "ngramas.csv")
     _salvar_vocabulario(vocabulario, diretorio_saida / "vocabulario.csv")
     jaccard_lojas.to_csv(diretorio_saida / "jaccard_lojas.csv")
+    _salvar_inversoes_ordem(inversoes_ordem, diretorio_saida / "inversoes_ordem.csv")
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
     gerar_tabela_heterogeneidade_tex(
