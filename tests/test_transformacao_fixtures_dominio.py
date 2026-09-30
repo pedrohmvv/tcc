@@ -150,6 +150,36 @@ def test_contar_ngramas_bigrama_reproduz_contagens_da_amostra(
     assert por_ngrama["ARROZ BRANCO"]["contagem"] == 2
 
 
+def test_medir_vocabulario_reproduz_estatisticas_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    vocabulario = eda.medir_vocabulario(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+
+    assert vocabulario["tipos_brutos"] == 18
+    assert vocabulario["tipos_normalizados"] == 16
+    assert vocabulario["hapax"] == 7
+    assert vocabulario["dis_legomena"] == 9
+    assert vocabulario["tokens_exclusivos_uma_loja"] == 11
+    assert vocabulario["tokens_exclusivos_uma_loja_freq_min2"] == 4
+    assert vocabulario["vocabulario_dicionario"] == 4
+    assert vocabulario["tokens_dicionario_presentes_na_base"] == 4
+    assert vocabulario["fracao_cobertura_dicionario"] == pytest.approx(1.0)
+    assert vocabulario["fracao_oov_bruto"] == pytest.approx(0.75)
+
+
+def test_calcular_jaccard_entre_lojas_reproduz_similaridade_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    matriz = eda.calcular_jaccard_entre_lojas(produtos_brutos_variados_exemplo)
+
+    assert matriz.loc["diniz_api", "guedes_api"] == pytest.approx(1.0)
+    assert matriz.loc["ajuba_api", "diniz_api"] == pytest.approx(0.0)
+    assert matriz.loc["ajuba_api", "ajuba_api"] == pytest.approx(1.0)
+
+
 def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
     produtos_brutos_variados_exemplo: pd.DataFrame,
     dicionario_canonico_exemplo: pd.DataFrame,

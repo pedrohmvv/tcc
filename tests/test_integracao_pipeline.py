@@ -131,6 +131,16 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     assert set(df_ngramas["n"]) == {1, 2, 3}
     assert (latex_tabelas / "tab_ngramas.tex").exists()
 
+    df_vocabulario = pd.read_csv(resultados_metricas / "vocabulario.csv")
+    linha_vocabulario = df_vocabulario.set_index("metrica")["valor"]
+    assert int(linha_vocabulario["tipos_normalizados"]) == 16
+    assert (latex_tabelas / "tab_vocabulario.tex").exists()
+
+    df_jaccard = pd.read_csv(resultados_metricas / "jaccard_lojas.csv", index_col=0)
+    assert float(df_jaccard.loc["diniz_api", "guedes_api"]) == pytest.approx(1.0)
+    assert (latex_figuras / "fig_jaccard_lojas.png").exists()
+    assert (latex_figuras / "fig_jaccard_lojas.tex").exists()
+
 
 def test_gerar_tabela_comprimentos_tex_escreve_arquivo_com_estatisticas(
     tmp_path: Path,
@@ -184,6 +194,36 @@ def test_gerar_tabela_ngramas_tex_escreve_tres_blocos(tmp_path: Path) -> None:
     assert r"\label{tab:ngramas-trigramas}" in conteudo
     assert "ARROZ" in conteudo
     assert "Arroz Branco 1kg" in conteudo
+
+
+def test_gerar_tabela_vocabulario_tex_escreve_arquivo_com_metricas(
+    tmp_path: Path,
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    vocabulario = analise_exploratoria.medir_vocabulario(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+    caminho_tex = tmp_path / "tab_vocabulario.tex"
+
+    analise_exploratoria.gerar_tabela_vocabulario_tex(vocabulario, caminho_tex)
+
+    conteudo = caminho_tex.read_text(encoding="utf-8")
+    assert r"\label{tab:vocabulario}" in conteudo
+    assert "18" in conteudo
+    assert "0.75" in conteudo or "75.0" in conteudo
+
+
+def test_gerar_figura_jaccard_escreve_arquivo_png(
+    tmp_path: Path, produtos_brutos_variados_exemplo: pd.DataFrame
+) -> None:
+    matriz = analise_exploratoria.calcular_jaccard_entre_lojas(produtos_brutos_variados_exemplo)
+    caminho_png = tmp_path / "fig_jaccard_lojas.png"
+
+    analise_exploratoria.gerar_figura_jaccard(matriz, caminho_png)
+
+    assert caminho_png.exists()
+    assert caminho_png.stat().st_size > 0
 
 
 def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(

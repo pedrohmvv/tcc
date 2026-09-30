@@ -333,6 +333,187 @@ def gerar_tabela_ngramas_tex(
     caminho.write_text(conteudo, encoding="utf-8")
 
 
+class Vocabulario(TypedDict):
+    """Métricas de vocabulário e dispersão lexical (spec 001, EDA textual, item 4)."""
+
+    tipos_brutos: int
+    tipos_normalizados: int
+    hapax: int
+    dis_legomena: int
+    tokens_exclusivos_uma_loja: int
+    tokens_exclusivos_uma_loja_freq_min2: int
+    vocabulario_dicionario: int
+    tokens_dicionario_presentes_na_base: int
+    fracao_cobertura_dicionario: float
+    fracao_oov_bruto: float
+
+
+def medir_vocabulario(df_produtos: pd.DataFrame, df_dicionario: pd.DataFrame) -> Vocabulario:
+    """Mede tamanho de vocabulário, hapax/dis legomena, dispersão entre lojas e cobertura canônica.
+
+    Sustenta o argumento de baixo recurso/especificidade de domínio: quanto
+    do vocabulário é raro (hapax), exclusivo de uma única loja, ou fora do
+    vocabulário do dicionário canônico (OOV).
+    """
+    tokens_brutos_por_descricao = df_produtos["description"].map(
+        lambda texto: tokenizar(texto, normalizar=False)
+    )
+    tokens_normalizados_por_descricao = df_produtos["description"].map(
+        lambda texto: tokenizar(texto, normalizar=True)
+    )
+
+    vocab_bruto: set[str] = set()
+    for tokens in tokens_brutos_por_descricao:
+        vocab_bruto.update(tokens)
+
+    vocab_normalizado: Counter[str] = Counter()
+    for tokens in tokens_normalizados_por_descricao:
+        vocab_normalizado.update(tokens)
+
+    hapax = sum(1 for frequencia in vocab_normalizado.values() if frequencia == 1)
+    dis_legomena = sum(1 for frequencia in vocab_normalizado.values() if frequencia == 2)
+
+    pares_token_fonte = (
+        df_produtos.assign(_token=tokens_normalizados_por_descricao)[["source", "_token"]]
+        .explode("_token")
+        .dropna()
+    )
+    fontes_por_token = pares_token_fonte.groupby("_token")["source"].nunique()
+    tokens_exclusivos = fontes_por_token[fontes_por_token == 1].index
+    tokens_freq_min2 = {token for token, freq in vocab_normalizado.items() if freq >= 2}
+    exclusivos_freq_min2 = sum(1 for token in tokens_exclusivos if token in tokens_freq_min2)
+
+    vocab_dicionario: set[str] = set()
+    for entrada in df_dicionario["desc_alim"]:
+        vocab_dicionario.update(tokenizar(str(entrada), normalizar=True))
+
+    presentes_na_base = vocab_dicionario & set(vocab_normalizado)
+    fracao_cobertura = len(presentes_na_base) / len(vocab_dicionario) if vocab_dicionario else 0.0
+    fracao_oov = 1 - (len(presentes_na_base) / len(vocab_normalizado)) if vocab_normalizado else 0.0
+
+    return {
+        "tipos_brutos": len(vocab_bruto),
+        "tipos_normalizados": len(vocab_normalizado),
+        "hapax": hapax,
+        "dis_legomena": dis_legomena,
+        "tokens_exclusivos_uma_loja": len(tokens_exclusivos),
+        "tokens_exclusivos_uma_loja_freq_min2": exclusivos_freq_min2,
+        "vocabulario_dicionario": len(vocab_dicionario),
+        "tokens_dicionario_presentes_na_base": len(presentes_na_base),
+        "fracao_cobertura_dicionario": fracao_cobertura,
+        "fracao_oov_bruto": fracao_oov,
+    }
+
+
+def calcular_jaccard_entre_lojas(df_produtos: pd.DataFrame) -> pd.DataFrame:
+    """Matriz de similaridade de Jaccard do vocabulário normalizado entre lojas (`source`).
+
+    Mede a dispersão lexical entre lojas (spec 001, EDA textual, item 4):
+    quanto menor a similaridade, mais cada rede usa um vocabulário próprio.
+    """
+    tokens_normalizados = df_produtos["description"].map(
+        lambda texto: set(tokenizar(texto, normalizar=True))
+    )
+    vocab_por_loja = (
+        df_produtos.assign(_tokens=tokens_normalizados)
+        .groupby("source")["_tokens"]
+        .apply(lambda grupos: set().union(*grupos))
+    )
+    fontes = sorted(vocab_por_loja.index)
+    matriz = pd.DataFrame(index=fontes, columns=fontes, dtype=float)
+    for fonte_a in fontes:
+        for fonte_b in fontes:
+            uniao = vocab_por_loja[fonte_a] | vocab_por_loja[fonte_b]
+            intersecao = vocab_por_loja[fonte_a] & vocab_por_loja[fonte_b]
+            matriz.loc[fonte_a, fonte_b] = len(intersecao) / len(uniao) if uniao else 0.0
+    return matriz
+
+
+def gerar_tabela_vocabulario_tex(vocabulario: Vocabulario, caminho: Path) -> None:
+    """Escreve a tabela LaTeX de métricas de vocabulário (EDA textual, item 4)."""
+    linhas_por_metrica: list[tuple[str, str]] = [
+        ("Tipos (bruto, sensível a caixa/acento)", "tipos_brutos"),
+        ("Tipos (normalizado)", "tipos_normalizados"),
+        ("Hapax legomena (frequência 1)", "hapax"),
+        ("Dis legomena (frequência 2)", "dis_legomena"),
+        ("Tokens exclusivos de uma loja", "tokens_exclusivos_uma_loja"),
+        ("— idem, com frequência ≥ 2", "tokens_exclusivos_uma_loja_freq_min2"),
+        ("Vocabulário do dicionário canônico", "vocabulario_dicionario"),
+        ("— presente na base bruta", "tokens_dicionario_presentes_na_base"),
+    ]
+    linhas_tabela = "\n".join(
+        f"{rotulo} & {vocabulario[chave]} \\\\"  # type: ignore[literal-required]
+        for rotulo, chave in linhas_por_metrica
+    )
+    cobertura_pct = vocabulario["fracao_cobertura_dicionario"] * 100
+    oov_pct = vocabulario["fracao_oov_bruto"] * 100
+    linha_cobertura = f"Cobertura do dicionário na base (\\%) & {cobertura_pct:.1f} \\\\"
+    linha_oov = f"Tokens brutos fora do dicionário (OOV, \\%) & {oov_pct:.1f} \\\\"
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Vocabulário e dispersão lexical entre lojas}\n"
+        "\\label{tab:vocabulario}\n"
+        "\\small\n"
+        "\\begin{tabular}{lr}\n"
+        "\\toprule\n"
+        "Métrica & Valor \\\\\n"
+        "\\midrule\n"
+        f"{linhas_tabela}\n"
+        f"{linha_cobertura}\n"
+        f"{linha_oov}\n"
+        "\\bottomrule\n"
+        "\\end{tabular}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{table}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
+
+
+def gerar_figura_jaccard(matriz: pd.DataFrame, caminho: Path) -> None:
+    """Gera o heatmap de similaridade de Jaccard do vocabulário entre lojas."""
+    fig, ax = plt.subplots(figsize=(7, 6))
+    im = ax.imshow(matriz.to_numpy(), cmap="viridis", vmin=0, vmax=1)
+    ax.set_xticks(range(len(matriz.columns)))
+    ax.set_xticklabels(matriz.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(matriz.index)))
+    ax.set_yticklabels(matriz.index)
+    for i in range(len(matriz.index)):
+        for j in range(len(matriz.columns)):
+            ax.text(
+                j,
+                i,
+                f"{matriz.iloc[i, j]:.2f}",
+                ha="center",
+                va="center",
+                color="white" if matriz.iloc[i, j] < 0.5 else "black",
+                fontsize=8,
+            )
+    ax.set_title("Similaridade de Jaccard do vocabulário entre lojas")
+    fig.colorbar(im, ax=ax, label="Jaccard")
+    fig.tight_layout()
+    fig.savefig(caminho)
+    plt.close(fig)
+
+
+def gerar_figura_jaccard_tex(caminho: Path, nome_arquivo_png: str) -> None:
+    """Escreve o wrapper LaTeX da figura de Jaccard entre lojas."""
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{figure}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Similaridade de Jaccard do vocabulário entre lojas}\n"
+        "\\label{fig:jaccard-lojas}\n"
+        f"\\includegraphics[width=0.8\\textwidth]{{{nome_arquivo_png}}}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{figure}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
+
+
 def gerar_tabela_comprimentos_tex(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
     """Escreve a tabela LaTeX de comprimento de descrições (EDA textual, item 1)."""
     linhas_por_metrica = [
@@ -599,6 +780,11 @@ def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> N
     pd.DataFrame(linhas).to_csv(caminho, index=False)
 
 
+def _salvar_vocabulario(vocabulario: Vocabulario, caminho: Path) -> None:
+    linhas = [{"metrica": chave, "valor": valor} for chave, valor in vocabulario.items()]
+    pd.DataFrame(linhas).to_csv(caminho, index=False)
+
+
 def _salvar_ngramas(
     unigramas: list[dict[str, object]],
     bigramas: list[dict[str, object]],
@@ -691,6 +877,8 @@ def estatisticas_descritivas(
     unigramas = contar_ngramas(df_produtos, n=1, top_k=10)
     bigramas = contar_ngramas(df_produtos, n=2, top_k=10)
     trigramas = contar_ngramas(df_produtos, n=3, top_k=10)
+    vocabulario = medir_vocabulario(df_produtos, df_dicionario)
+    jaccard_lojas = calcular_jaccard_entre_lojas(df_produtos)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
@@ -701,6 +889,8 @@ def estatisticas_descritivas(
         comparacao_comprimentos, diretorio_saida / "comprimento_descricoes.csv"
     )
     _salvar_ngramas(unigramas, bigramas, trigramas, diretorio_saida / "ngramas.csv")
+    _salvar_vocabulario(vocabulario, diretorio_saida / "vocabulario.csv")
+    jaccard_lojas.to_csv(diretorio_saida / "jaccard_lojas.csv")
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
     gerar_tabela_heterogeneidade_tex(
@@ -712,6 +902,7 @@ def estatisticas_descritivas(
     gerar_tabela_ngramas_tex(
         unigramas, bigramas, trigramas, diretorio_latex_tabelas / "tab_ngramas.tex"
     )
+    gerar_tabela_vocabulario_tex(vocabulario, diretorio_latex_tabelas / "tab_vocabulario.tex")
 
     diretorio_figuras.mkdir(parents=True, exist_ok=True)
     gerar_figura_distribuicao_source(contagens, diretorio_figuras / "distribuicao_source.png")
@@ -722,6 +913,10 @@ def estatisticas_descritivas(
     )
     gerar_figura_comprimentos_tex(
         diretorio_latex_figuras / "fig_comprimento_descricoes.tex", "fig_comprimento_descricoes.png"
+    )
+    gerar_figura_jaccard(jaccard_lojas, diretorio_latex_figuras / "fig_jaccard_lojas.png")
+    gerar_figura_jaccard_tex(
+        diretorio_latex_figuras / "fig_jaccard_lojas.tex", "fig_jaccard_lojas.png"
     )
 
     logger.info(
