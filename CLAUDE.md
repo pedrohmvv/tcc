@@ -16,7 +16,7 @@ Problema: mapear descrições heterogêneas de produtos (ruído de PDV) a um dic
 latex/tcc_artigo/        ← ÚNICO formato usado (abntex2[article]); os outros 7 formatos do template foram removidos
   main.tex                  texto do TCC
   referencias.bib           só entradas verificadas (ver skill verificacao-citacoes)
-  figuras/, tabelas/         gerados por scripts/06_*, nunca editados à mão
+  figuras/, tabelas/         gerados por scripts/02_* (EDA) ou scripts/06_* (resultados); nunca editados à mão — ver AGENTS.md §4
 
 dados/
   brutos/                   dados originais do ALTA (imutáveis)

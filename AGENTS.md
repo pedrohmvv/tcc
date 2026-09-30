@@ -44,11 +44,11 @@ Matplotlib/Seaborn em teste: backend `Agg` ou mock de `savefig`.
 
 Única saída de texto do TCC: `latex/tcc_artigo/` (`abntex2[article]`). Compilar com `make latex DOC=tcc_artigo` (`latexmk`).
 
-Duas categorias de arquivo em `latex/tcc_artigo/figuras/` e `tabelas/`, com regras distintas:
+Três categorias de arquivo em `latex/tcc_artigo/figuras/` e `tabelas/`, com regras distintas:
 
+- **Tabelas/figuras de EDA** (caracterização da base, spec 001 — comprimento de descrições, n-gramas, vocabulário, formas de unidade, exemplos de ruído, heterogeneidade) — geradas pelo script 02, **nunca editadas à mão**. Hoje: `tab_heterogeneidade_exemplos.tex`, `tab_comprimento_descricoes.tex`, `tab_ngramas.tex`, `tab_vocabulario.tex`, `tab_formas_unidade.tex`, `tab_exemplos_ruido.tex`, `fig_comprimento_descricoes.tex`, `fig_jaccard_lojas.tex`.
 - **Tabelas/figuras de resultado** (números de experimento: métricas, comparações, ablação) — geradas pelo script 06, **nunca editadas à mão**. É aqui que a regra evita número digitado errado.
-- **Tabelas/figuras de conteúdo qualitativo** (não derivam de resultado experimental: critérios de seleção, cronograma, diagrama do pipeline) — escritas à mão, versionadas normalmente. Hoje: `tab_criterios_selecao_slm.tex`, `tab_cronograma_execucao.tex`, `fig_pipeline.tex`.
-- `tab_heterogeneidade_exemplos.tex` é caso especial: hoje escrita à mão, mas **deve migrar** para geração automática pelo script 02 assim que a EDA existir (spec 001, tarefa 1.1.4) — passa a extrair exemplos reais da base em vez de exemplo digitado.
+- **Tabelas/figuras de conteúdo qualitativo** (não derivam de dado real: critérios de seleção, cronograma, diagrama do pipeline) — escritas à mão, versionadas normalmente. Hoje: `tab_criterios_selecao_slm.tex`, `tab_cronograma_execucao.tex`, `fig_pipeline.tex`.
 
 Strings LaTeX exportadas do Pandas precisam preservar escapes (`replace("_", r"\_")` e equivalentes).
 
