@@ -151,6 +151,10 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     assert int(por_forma["kg"]) == 2
     assert (latex_tabelas / "tab_formas_unidade.tex").exists()
 
+    df_exemplos_ruido = pd.read_csv(resultados_metricas / "exemplos_ruido.csv")
+    assert set(df_exemplos_ruido["tipo"]) <= {"abreviação", "tipografia", "unidade", "inversão"}
+    assert (latex_tabelas / "tab_exemplos_ruido.tex").exists()
+
 
 def test_gerar_tabela_comprimentos_tex_escreve_arquivo_com_estatisticas(
     tmp_path: Path,
@@ -246,6 +250,26 @@ def test_gerar_tabela_formas_unidade_tex_escreve_arquivo(tmp_path: Path) -> None
     assert r"\label{tab:formas-unidade}" in conteudo
     assert "grama" in conteudo
     assert "1131" in conteudo
+
+
+def test_gerar_tabela_exemplos_ruido_tex_escreve_arquivo(tmp_path: Path) -> None:
+    exemplos = [
+        {"tipo": "abreviação", "descricao_a": "Canjica C/ Pacoca 200g", "descricao_b": ""},
+        {
+            "tipo": "inversão",
+            "descricao_a": "Suco Uva Del Valle 1,5L",
+            "descricao_b": "Suco Del Valle Uva 1,5l",
+        },
+    ]
+    caminho_tex = tmp_path / "tab_exemplos_ruido.tex"
+
+    analise_exploratoria.gerar_tabela_exemplos_ruido_tex(exemplos, caminho_tex)
+
+    conteudo = caminho_tex.read_text(encoding="utf-8")
+    assert r"\label{tab:exemplos-ruido}" in conteudo
+    assert "Canjica C/ Pacoca 200g" in conteudo
+    assert "Suco Uva Del Valle 1,5L" in conteudo
+    assert "Suco Del Valle Uva 1,5l" in conteudo
 
 
 def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(

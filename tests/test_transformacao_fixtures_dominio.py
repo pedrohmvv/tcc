@@ -212,6 +212,61 @@ def test_contar_formas_de_unidade_reproduz_grafias_da_amostra(
     assert por_forma["kg"]["unidade_canonica"] == "quilograma"
 
 
+def test_selecionar_exemplos_ruido_abreviacao_usa_detector_existente(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_ruido(produtos_brutos_variados_exemplo, n_por_tipo=3)
+    abreviacao = [e for e in exemplos if e["tipo"] == "abreviação"]
+
+    assert len(abreviacao) == 1
+    assert abreviacao[0]["descricao_a"] == "Agua Mineral C/gas Grf Pet 1,5l Indaia"
+    assert abreviacao[0]["descricao_b"] == ""
+
+
+def test_selecionar_exemplos_ruido_tipografia_usa_detectores_existentes(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_ruido(produtos_brutos_variados_exemplo, n_por_tipo=3)
+    tipografia = [e["descricao_a"] for e in exemplos if e["tipo"] == "tipografia"]
+
+    # 3 das 4 linhas são "sem acentuação" (a 4a, "Água Mineral...", tem acento).
+    assert len(tipografia) == 3
+    assert set(tipografia) == {
+        "Agua Mineral C/gas Grf Pet 1,5l Indaia",
+        "Arroz Branco Tio Joao 1kg",
+    }
+
+
+def test_selecionar_exemplos_ruido_unidade_pareia_grafias_diferentes() -> None:
+    df = pd.DataFrame(
+        [
+            {"product_id": 1, "description": "Queijo Coalho 500G", "source": "a_api"},
+            {"product_id": 2, "description": "Queijo Coalho 500GR", "source": "b_api"},
+        ]
+    )
+    exemplos = eda.selecionar_exemplos_ruido(df, n_por_tipo=3)
+    unidade = [e for e in exemplos if e["tipo"] == "unidade"]
+
+    assert len(unidade) == 1
+    assert {unidade[0]["descricao_a"], unidade[0]["descricao_b"]} == {
+        "Queijo Coalho 500G",
+        "Queijo Coalho 500GR",
+    }
+
+
+def test_selecionar_exemplos_ruido_inversao_usa_pares_entre_lojas(
+    produtos_brutos_inversao_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_ruido(produtos_brutos_inversao_exemplo, n_por_tipo=3)
+    inversao = [e for e in exemplos if e["tipo"] == "inversão"]
+
+    assert len(inversao) == 1
+    assert {inversao[0]["descricao_a"], inversao[0]["descricao_b"]} == {
+        "Suco Uva Del Valle 1,5L",
+        "Suco Del Valle Uva 1,5l",
+    }
+
+
 def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
     produtos_brutos_variados_exemplo: pd.DataFrame,
     dicionario_canonico_exemplo: pd.DataFrame,

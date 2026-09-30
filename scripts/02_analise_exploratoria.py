@@ -550,6 +550,17 @@ def contar_formas_de_unidade(df_produtos: pd.DataFrame) -> list[dict[str, object
     ]
 
 
+def _tokens_e_chave_multiconjunto(df_produtos: pd.DataFrame) -> pd.DataFrame:
+    """`df_produtos` com colunas auxiliares `_chave` (multiconjunto ordenado) e `_ordem`."""
+    tokens_por_descricao = df_produtos["description"].map(
+        lambda texto: tokenizar(texto, normalizar=True)
+    )
+    return df_produtos.assign(
+        _chave=tokens_por_descricao.map(lambda tokens: " ".join(sorted(tokens))),
+        _ordem=tokens_por_descricao.map(lambda tokens: " ".join(tokens)),
+    )
+
+
 def detectar_inversoes_de_ordem(df_produtos: pd.DataFrame) -> dict[str, object]:
     """Taxa de grupos com o mesmo multiconjunto de tokens em ordem diferente entre lojas.
 
@@ -559,16 +570,9 @@ def detectar_inversoes_de_ordem(df_produtos: pd.DataFrame) -> dict[str, object]:
     de tokens normalizados. Descrições idênticas repetidas em lojas
     diferentes (mesma ordem) não contam como inversão.
     """
-    tokens_por_descricao = df_produtos["description"].map(
-        lambda texto: tokenizar(texto, normalizar=True)
-    )
-    chave_multiconjunto = tokens_por_descricao.map(lambda tokens: " ".join(sorted(tokens)))
-    ordem_original = tokens_por_descricao.map(lambda tokens: " ".join(tokens))
-
-    agrupado = (
-        df_produtos.assign(_chave=chave_multiconjunto, _ordem=ordem_original)
-        .groupby("_chave")
-        .agg(n_ordens_distintas=("_ordem", "nunique"), n_fontes_distintas=("source", "nunique"))
+    df_aux = _tokens_e_chave_multiconjunto(df_produtos)
+    agrupado = df_aux.groupby("_chave").agg(
+        n_ordens_distintas=("_ordem", "nunique"), n_fontes_distintas=("source", "nunique")
     )
 
     grupos_com_inversao = agrupado[
@@ -581,6 +585,126 @@ def detectar_inversoes_de_ordem(df_produtos: pd.DataFrame) -> dict[str, object]:
         "grupos_com_inversao_entre_lojas": len(grupos_com_inversao),
         "taxa_inversao_entre_lojas": taxa,
     }
+
+
+def _linhas_com_inversao(df_produtos: pd.DataFrame) -> pd.DataFrame:
+    """Linhas de `df_produtos` (com `_chave`/`_ordem`) cujo grupo tem inversão entre lojas."""
+    df_aux = _tokens_e_chave_multiconjunto(df_produtos)
+    agrupado = df_aux.groupby("_chave").agg(
+        n_ordens_distintas=("_ordem", "nunique"), n_fontes_distintas=("source", "nunique")
+    )
+    chaves_com_inversao = agrupado[
+        (agrupado["n_ordens_distintas"] > 1) & (agrupado["n_fontes_distintas"] > 1)
+    ].index
+    return df_aux[df_aux["_chave"].isin(chaves_com_inversao)]
+
+
+def _amostrar_ate(serie: pd.Series, n: int, seed: int) -> list[str]:
+    if len(serie) == 0:
+        return []
+    return serie.sample(min(n, len(serie)), random_state=seed).tolist()
+
+
+def selecionar_exemplos_ruido(
+    df_produtos: pd.DataFrame, seed: int = SEED, n_por_tipo: int = 3
+) -> list[dict[str, object]]:
+    """Seleciona exemplos reais por tipo de ruído citado em `main.tex` (EDA textual, item 3).
+
+    Reaproveita os detectores já testados (1.1.2) e o agrupamento por
+    multiconjunto de tokens (inversão) — não inventa exemplo novo nem
+    critério de detecção novo. `descricao_b` fica vazio para os tipos que
+    não formam par (abreviação, tipografia).
+    """
+    exemplos: list[dict[str, object]] = []
+
+    candidatos_abreviatura = df_produtos.loc[
+        df_produtos["description"].map(tem_abreviatura), "description"
+    ]
+    for descricao in _amostrar_ate(candidatos_abreviatura, n_por_tipo, seed):
+        exemplos.append({"tipo": "abreviação", "descricao_a": descricao, "descricao_b": ""})
+
+    mascara_tipografia = df_produtos["description"].map(
+        lambda texto: esta_sem_acentuacao(texto) or esta_em_caixa_alta(texto)
+    )
+    candidatos_tipografia = df_produtos.loc[mascara_tipografia, "description"]
+    for descricao in _amostrar_ate(candidatos_tipografia, n_por_tipo, seed):
+        exemplos.append({"tipo": "tipografia", "descricao_a": descricao, "descricao_b": ""})
+
+    formas_por_unidade: dict[str, set[str]] = {}
+    for linha in contar_formas_de_unidade(df_produtos):
+        formas_por_unidade.setdefault(str(linha["unidade_canonica"]), set()).add(
+            str(linha["forma"])
+        )
+    unidades_com_variacao = [
+        unidade for unidade, formas in formas_por_unidade.items() if len(formas) > 1
+    ]
+    for unidade in unidades_com_variacao[:n_por_tipo]:
+        forma_a, forma_b = sorted(formas_por_unidade[unidade])[:2]
+        padrao_a = re.compile(rf"\d{re.escape(forma_a)}\b")
+        padrao_b = re.compile(rf"\d{re.escape(forma_b)}\b")
+        candidatos_a = df_produtos.loc[
+            df_produtos["description"].map(lambda t, p=padrao_a: bool(p.search(t))), "description"
+        ]
+        candidatos_b = df_produtos.loc[
+            df_produtos["description"].map(lambda t, p=padrao_b: bool(p.search(t))), "description"
+        ]
+        if len(candidatos_a) and len(candidatos_b):
+            exemplos.append(
+                {
+                    "tipo": "unidade",
+                    "descricao_a": candidatos_a.sample(1, random_state=seed).iloc[0],
+                    "descricao_b": candidatos_b.sample(1, random_state=seed).iloc[0],
+                }
+            )
+
+    df_inversao = _linhas_com_inversao(df_produtos)
+    for _, grupo in list(df_inversao.groupby("_chave"))[:n_por_tipo]:
+        ordens_distintas = grupo["_ordem"].unique()
+        linha_a = grupo[grupo["_ordem"] == ordens_distintas[0]].sample(1, random_state=seed)
+        linha_b = grupo[grupo["_ordem"] == ordens_distintas[1]].sample(1, random_state=seed)
+        exemplos.append(
+            {
+                "tipo": "inversão",
+                "descricao_a": linha_a["description"].iloc[0],
+                "descricao_b": linha_b["description"].iloc[0],
+            }
+        )
+
+    return exemplos
+
+
+def gerar_tabela_exemplos_ruido_tex(exemplos: list[dict[str, object]], caminho: Path) -> None:
+    """Escreve a tabela LaTeX de exemplos reais por tipo de ruído (EDA textual, item 3).
+
+    Candidata a fundamentar a Tabela de heterogeneidade da Introdução — o
+    autor decide depois se algum exemplo migra para lá.
+    """
+    linhas_tabela = "\n".join(
+        f"{escapar_latex(str(exemplo['tipo']))} & {escapar_latex(str(exemplo['descricao_a']))} & "
+        f"{escapar_latex(str(exemplo['descricao_b']))} \\\\"
+        for exemplo in exemplos
+    )
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        "\\caption{Exemplos reais por tipo de ruído de PDV}\n"
+        "\\label{tab:exemplos-ruido}\n"
+        "\\small\n"
+        "\\resizebox{\\textwidth}{!}{%\n"
+        "\\begin{tabular}{lll}\n"
+        "\\toprule\n"
+        "Tipo de ruído & Descrição A & Descrição B \\\\\n"
+        "\\midrule\n"
+        f"{linhas_tabela}\n"
+        "\\bottomrule\n"
+        "\\end{tabular}%\n"
+        "}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{table}\n"
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
 
 
 def gerar_tabela_formas_unidade_tex(formas: list[dict[str, object]], caminho: Path) -> None:
@@ -983,6 +1107,7 @@ def estatisticas_descritivas(
     jaccard_lojas = calcular_jaccard_entre_lojas(df_produtos)
     inversoes_ordem = detectar_inversoes_de_ordem(df_produtos)
     formas_unidade = contar_formas_de_unidade(df_produtos)
+    exemplos_ruido = selecionar_exemplos_ruido(df_produtos)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
@@ -997,6 +1122,7 @@ def estatisticas_descritivas(
     jaccard_lojas.to_csv(diretorio_saida / "jaccard_lojas.csv")
     _salvar_inversoes_ordem(inversoes_ordem, diretorio_saida / "inversoes_ordem.csv")
     pd.DataFrame(formas_unidade).to_csv(diretorio_saida / "formas_unidade.csv", index=False)
+    pd.DataFrame(exemplos_ruido).to_csv(diretorio_saida / "exemplos_ruido.csv", index=False)
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
     gerar_tabela_heterogeneidade_tex(
@@ -1011,6 +1137,9 @@ def estatisticas_descritivas(
     gerar_tabela_vocabulario_tex(vocabulario, diretorio_latex_tabelas / "tab_vocabulario.tex")
     gerar_tabela_formas_unidade_tex(
         formas_unidade, diretorio_latex_tabelas / "tab_formas_unidade.tex"
+    )
+    gerar_tabela_exemplos_ruido_tex(
+        exemplos_ruido, diretorio_latex_tabelas / "tab_exemplos_ruido.tex"
     )
 
     diretorio_figuras.mkdir(parents=True, exist_ok=True)
