@@ -36,6 +36,7 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
+from collections import Counter
 from pathlib import Path
 from typing import TypedDict
 
@@ -226,6 +227,110 @@ def comparar_comprimentos(
         "tokens_bruto": tokens_bruto.describe().to_dict(),
         "tokens_dicionario": tokens_dicionario.describe().to_dict(),
     }
+
+
+_STOPWORDS_NGRAMAS = {"DE", "DA", "DO", "DOS", "DAS", "E", "COM", "EM", "C"}
+
+
+def _marcas_de_ruido(descricao: str) -> list[str]:
+    marcas = []
+    if tem_unidade_colada(descricao):
+        marcas.append("unidade colada")
+    if esta_em_caixa_alta(descricao):
+        marcas.append("caixa alta")
+    if esta_sem_acentuacao(descricao):
+        marcas.append("sem acentuação")
+    if tem_abreviatura(descricao):
+        marcas.append("abreviatura")
+    return marcas
+
+
+def _contem_subsequencia(tokens: list[str], ngrama: tuple[str, ...]) -> bool:
+    tamanho = len(ngrama)
+    return any(tuple(tokens[i : i + tamanho]) == ngrama for i in range(len(tokens) - tamanho + 1))
+
+
+def contar_ngramas(
+    df_produtos: pd.DataFrame, n: int, top_k: int = 10, seed: int = SEED
+) -> list[dict[str, object]]:
+    """Top-k n-gramas (tokens normalizados, sem stopwords mínimas) na base bruta.
+
+    Cada linha traz uma descrição real que contém o n-grama (amostra
+    determinística via `seed`) e quais detectores de ruído já existentes
+    (spec 001, 1.1.2) disparam nessa descrição — não inventa exemplo novo,
+    reaproveita os detectores já testados.
+    """
+    tokens_por_descricao = df_produtos["description"].map(
+        lambda texto: [
+            token for token in tokenizar(texto, normalizar=True) if token not in _STOPWORDS_NGRAMAS
+        ]
+    )
+    contador: Counter[tuple[str, ...]] = Counter()
+    for tokens in tokens_por_descricao:
+        for i in range(len(tokens) - n + 1):
+            contador[tuple(tokens[i : i + n])] += 1
+
+    resultado: list[dict[str, object]] = []
+    for ngrama, contagem in contador.most_common(top_k):
+        mascara = tokens_por_descricao.map(
+            lambda tokens, ng=ngrama: _contem_subsequencia(tokens, ng)
+        )
+        candidatos = df_produtos.loc[mascara, "description"]
+        exemplo = str(candidatos.sample(1, random_state=seed).iloc[0]) if len(candidatos) else ""
+        resultado.append(
+            {
+                "ngrama": " ".join(ngrama),
+                "contagem": contagem,
+                "exemplo": exemplo,
+                "marca_ruido": ", ".join(_marcas_de_ruido(exemplo)) if exemplo else "-",
+            }
+        )
+    return resultado
+
+
+def _bloco_tabela_ngramas(titulo: str, label: str, linhas: list[dict[str, object]]) -> str:
+    corpo = "\n".join(
+        f"{escapar_latex(str(linha['ngrama']))} & {linha['contagem']} & "
+        f"{escapar_latex(str(linha['marca_ruido']))} & {escapar_latex(str(linha['exemplo']))} \\\\"
+        for linha in linhas
+    )
+    return (
+        "\\begin{table}[htbp]\n"
+        "\\centering\n"
+        f"\\caption{{{titulo}}}\n"
+        f"\\label{{{label}}}\n"
+        "\\small\n"
+        "\\resizebox{\\textwidth}{!}{%\n"
+        "\\begin{tabular}{lrll}\n"
+        "\\toprule\n"
+        "N-grama & Contagem & Ruído & Exemplo real \\\\\n"
+        "\\midrule\n"
+        f"{corpo}\n"
+        "\\bottomrule\n"
+        "\\end{tabular}%\n"
+        "}\n"
+        "\\vspace{2mm}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\end{table}\n"
+    )
+
+
+def gerar_tabela_ngramas_tex(
+    unigramas: list[dict[str, object]],
+    bigramas: list[dict[str, object]],
+    trigramas: list[dict[str, object]],
+    caminho: Path,
+) -> None:
+    """Escreve as três tabelas de n-gramas mais frequentes (EDA textual, item 2)."""
+    conteudo = (
+        "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
+        + _bloco_tabela_ngramas("Unigramas mais frequentes", "tab:ngramas-unigramas", unigramas)
+        + "\n"
+        + _bloco_tabela_ngramas("Bigramas mais frequentes", "tab:ngramas-bigramas", bigramas)
+        + "\n"
+        + _bloco_tabela_ngramas("Trigramas mais frequentes", "tab:ngramas-trigramas", trigramas)
+    )
+    caminho.write_text(conteudo, encoding="utf-8")
 
 
 def gerar_tabela_comprimentos_tex(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
@@ -494,6 +599,20 @@ def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> N
     pd.DataFrame(linhas).to_csv(caminho, index=False)
 
 
+def _salvar_ngramas(
+    unigramas: list[dict[str, object]],
+    bigramas: list[dict[str, object]],
+    trigramas: list[dict[str, object]],
+    caminho: Path,
+) -> None:
+    linhas = [
+        {"n": n, **linha}
+        for n, grupo in ((1, unigramas), (2, bigramas), (3, trigramas))
+        for linha in grupo
+    ]
+    pd.DataFrame(linhas).to_csv(caminho, index=False)
+
+
 def _salvar_comparacao_comprimentos(comparacao: ComparacaoComprimentos, caminho: Path) -> None:
     series: list[tuple[str, dict[str, float]]] = [
         ("caracteres_bruto", comparacao["caracteres_bruto"]),
@@ -569,6 +688,9 @@ def estatisticas_descritivas(
     distribuicao_match_score = caracterizar_match_score(df_produtos)
     exemplos_heterogeneidade = selecionar_exemplos_heterogeneidade(df_produtos, df_dicionario)
     comparacao_comprimentos = comparar_comprimentos(df_produtos, df_dicionario)
+    unigramas = contar_ngramas(df_produtos, n=1, top_k=10)
+    bigramas = contar_ngramas(df_produtos, n=2, top_k=10)
+    trigramas = contar_ngramas(df_produtos, n=3, top_k=10)
 
     diretorio_saida.mkdir(parents=True, exist_ok=True)
     _salvar_contagens_escalares(contagens, diretorio_saida / "estatisticas_descritivas.csv")
@@ -578,6 +700,7 @@ def estatisticas_descritivas(
     _salvar_comparacao_comprimentos(
         comparacao_comprimentos, diretorio_saida / "comprimento_descricoes.csv"
     )
+    _salvar_ngramas(unigramas, bigramas, trigramas, diretorio_saida / "ngramas.csv")
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
     gerar_tabela_heterogeneidade_tex(
@@ -585,6 +708,9 @@ def estatisticas_descritivas(
     )
     gerar_tabela_comprimentos_tex(
         comparacao_comprimentos, diretorio_latex_tabelas / "tab_comprimento_descricoes.tex"
+    )
+    gerar_tabela_ngramas_tex(
+        unigramas, bigramas, trigramas, diretorio_latex_tabelas / "tab_ngramas.tex"
     )
 
     diretorio_figuras.mkdir(parents=True, exist_ok=True)

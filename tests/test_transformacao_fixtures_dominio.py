@@ -126,6 +126,30 @@ def test_comparar_comprimentos_reproduz_estatisticas_da_amostra(
     assert comparacao["tokens_dicionario"]["mean"] == pytest.approx(2.0)
 
 
+def test_contar_ngramas_unigrama_reproduz_contagens_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.contar_ngramas(produtos_brutos_variados_exemplo, n=1, top_k=10)
+    por_ngrama = {linha["ngrama"]: linha for linha in resultado}
+
+    assert por_ngrama["AGUA"]["contagem"] == 2
+    assert por_ngrama["ARROZ"]["contagem"] == 2
+    # "Arroz Branco Tio Joao 1kg" tem unidade colada (1KG) e falta de acentuação (Joao).
+    assert "unidade colada" in por_ngrama["ARROZ"]["marca_ruido"]
+    assert "sem acentuação" in por_ngrama["ARROZ"]["marca_ruido"]
+    assert por_ngrama["ARROZ"]["exemplo"] == "Arroz Branco Tio Joao 1kg"
+
+
+def test_contar_ngramas_bigrama_reproduz_contagens_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.contar_ngramas(produtos_brutos_variados_exemplo, n=2, top_k=10)
+    por_ngrama = {linha["ngrama"]: linha for linha in resultado}
+
+    assert por_ngrama["AGUA MINERAL"]["contagem"] == 2
+    assert por_ngrama["ARROZ BRANCO"]["contagem"] == 2
+
+
 def test_selecionar_exemplos_heterogeneidade_exige_duas_fontes_distintas(
     produtos_brutos_variados_exemplo: pd.DataFrame,
     dicionario_canonico_exemplo: pd.DataFrame,

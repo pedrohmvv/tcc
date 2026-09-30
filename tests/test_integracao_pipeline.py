@@ -127,6 +127,10 @@ def test_script_02_eda_gera_estatisticas_descritivas_em_tmp_path(
     assert (latex_figuras / "fig_comprimento_descricoes.png").exists()
     assert (latex_figuras / "fig_comprimento_descricoes.tex").exists()
 
+    df_ngramas = pd.read_csv(resultados_metricas / "ngramas.csv")
+    assert set(df_ngramas["n"]) == {1, 2, 3}
+    assert (latex_tabelas / "tab_ngramas.tex").exists()
+
 
 def test_gerar_tabela_comprimentos_tex_escreve_arquivo_com_estatisticas(
     tmp_path: Path,
@@ -159,6 +163,27 @@ def test_gerar_figura_comprimentos_escreve_arquivo_png(
 
     assert caminho_png.exists()
     assert caminho_png.stat().st_size > 0
+
+
+def test_gerar_tabela_ngramas_tex_escreve_tres_blocos(tmp_path: Path) -> None:
+    linhas = [
+        {
+            "ngrama": "ARROZ",
+            "contagem": 120,
+            "marca_ruido": "sem acentuação",
+            "exemplo": "Arroz Branco 1kg",
+        }
+    ]
+    caminho_tex = tmp_path / "tab_ngramas.tex"
+
+    analise_exploratoria.gerar_tabela_ngramas_tex(linhas, linhas, linhas, caminho_tex)
+
+    conteudo = caminho_tex.read_text(encoding="utf-8")
+    assert r"\label{tab:ngramas-unigramas}" in conteudo
+    assert r"\label{tab:ngramas-bigramas}" in conteudo
+    assert r"\label{tab:ngramas-trigramas}" in conteudo
+    assert "ARROZ" in conteudo
+    assert "Arroz Branco 1kg" in conteudo
 
 
 def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(
