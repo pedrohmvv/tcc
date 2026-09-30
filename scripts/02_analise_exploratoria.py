@@ -437,7 +437,7 @@ def gerar_tabela_vocabulario_tex(vocabulario: Vocabulario, caminho: Path) -> Non
         ("Hapax legomena (frequência 1)", "hapax"),
         ("Dis legomena (frequência 2)", "dis_legomena"),
         ("Tokens exclusivos de uma loja", "tokens_exclusivos_uma_loja"),
-        ("— idem, com frequência ≥ 2", "tokens_exclusivos_uma_loja_freq_min2"),
+        ("— idem, com frequência $\\geq$ 2", "tokens_exclusivos_uma_loja_freq_min2"),
         ("Vocabulário do dicionário canônico", "vocabulario_dicionario"),
         ("— presente na base bruta", "tokens_dicionario_presentes_na_base"),
     ]
