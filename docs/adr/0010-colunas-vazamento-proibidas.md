@@ -1,6 +1,6 @@
 # ADR-0010: Colunas `codg_item`, `desc_ref` e `match_score` são vazamento proibido
 
-**Status:** Aceito — CRÍTICO, não reabrir sem revisão extensa
+**Status:** Aceito — CRÍTICO. **Emendado pelo ADR-0011** (2026-10-06): as proibições de rótulo, treino, validação e anotação continuam; o ADR-0011 acrescenta o uso permitido como baseline "ALTA atual" avaliado contra o teste manual e substitui o assert de descarte no script 01 por restrições de leitura por script.
 
 ## Contexto
 `dados/brutos/todos_mercados_2026-09-10.csv` contém três colunas produzidas pelo pipeline de produção do ALTA, independente e anterior a este TCC: `codg_item` e `desc_ref` (código e descrição de referência já associados por um matching heurístico do ETL) e `match_score` (score de confiança desse matching). `dados/brutos/README.md` já registra essas colunas como risco de vazamento metodológico e proíbe seu uso na anotação e no treino, mas essa restrição vive apenas nesse README — não em ADR, spec ou checagem automatizada, o que não sobrevive a um lapso de memória ao longo das 16 semanas.

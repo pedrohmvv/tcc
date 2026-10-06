@@ -1,7 +1,7 @@
 # Spec 001: Construção do dataset e ground truth
 
 **Script correspondente:** `scripts/03_construcao_dataset.py`
-**ADRs relacionados:** 0004, 0005, 0006, 0007, 0010
+**ADRs relacionados:** 0004, 0005, 0006, 0007, 0010, 0011
 
 ## Objetivo
 Produzir partições treino/validação/teste sem vazamento, combinando geração assistida (treino) e anotação manual independente (teste), a partir de dados reais do projeto ALTA.
@@ -18,7 +18,7 @@ Produzir partições treino/validação/teste sem vazamento, combinando geraçã
 ## Requisitos não funcionais
 - Seed fixa no particionamento e em toda etapa estocástica.
 - `[CRÍTICO]` Nenhuma chamada ao Dataset Generator deve tocar os produtos reservados ao teste — validar isso com um assert/checagem explícita no script, não apenas por convenção.
-- `[CRÍTICO]` As colunas `codg_item`, `desc_ref` e `match_score` (matching heurístico pré-existente do ETL do ALTA) nunca alimentam rótulo de anotação, supervisão distante ou treino (ADR-0010) — o script 01 descarta as três por assert explícito antes de qualquer etapa seguinte consumir a saída; `match_score` só pode ser lido pelo script 02, e apenas para caracterização descritiva na EDA.
+- `[CRÍTICO]` Treino, validação e teste usam exclusivamente o texto dos nomes (`description`, `desc_alim`) — ADR-0011. As colunas `codg_item`, `desc_ref` e `match_score` (matching pré-existente do ALTA) nunca alimentam rótulo, supervisão distante, treino, validação, blocagem, seleção de pares para anotação nem o arquivo de anotação (ADR-0010/0011). As partições e o arquivo de anotação em `dados/processados/` não podem conter essas colunas: o script 03 e o validador de anotação falham por assert se aparecerem. Só os scripts 02 (EDA), 04 (baseline "ALTA atual") e 06 (análise de erro) as leem, direto dos brutos, e o 04/06 só depois do congelamento do teste.
 - Registrar recall da blocagem isoladamente (fração de vezes que o candidato correto está entre os top-k antes do reranqueamento) — necessário para a spec 004.
 
 ## Critérios de aceite

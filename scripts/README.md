@@ -47,9 +47,10 @@ Ver `CLAUDE.md` para a lista completa; as mais relevantes para quem for editar c
 
 - Cross-Encoder é a única arquitetura de matching (ADR-0001) — não implementar Bi-Encoder/híbrido.
 - Nunca usar o Dataset Generator (Dharma) para gerar ou rotular o conjunto de teste (ADR-0004).
-- As colunas `codg_item`, `desc_ref` e `match_score` nunca alimentam rótulo, em nenhuma etapa
-  (ADR-0010) — descartadas por assert no script 01; `match_score` só é lido pelo script 02, como
-  caracterização descritiva.
+- Treino, validação e teste usam só o texto dos nomes (`description` e `desc_alim`). As colunas
+  `codg_item`, `desc_ref` e `match_score` nunca alimentam rótulo, treino, validação, blocagem nem
+  anotação (ADR-0010/0011); só os scripts 02, 04 (baseline "ALTA atual", após congelar o teste) e
+  06 as leem, direto dos brutos. As saídas do 03 e a anotação não podem contê-las.
 - Split por produto canônico sempre **antes** de qualquer geração/aumentação (script 03).
 - Seeds fixas e configs versionadas em toda etapa estocástica (skill `reprodutibilidade-ml`).
 - Tabelas/figuras de **resultado** em `latex/tcc_artigo/` são geradas pelo script 06, nunca
