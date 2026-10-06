@@ -291,3 +291,36 @@ def test_gerar_tabela_heterogeneidade_tex_escreve_arquivo_com_exemplo_real(
     assert "ARROZ BRANCO TIO JOAO 1KG" in conteudo
     assert r"\label{tab:heterogeneidade}" in conteudo
     assert "% Gerado automaticamente" in conteudo
+
+
+construcao_dataset = _load("03_construcao_dataset.py")
+
+
+def test_script_03_limpeza_grava_base_limpa_sem_colunas_alta_em_tmp_path(
+    tmp_path: Path,
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    """03_construcao_dataset.py: limpeza lê brutos e grava parquet + relatório em processados."""
+    dados_brutos = tmp_path / "dados" / "brutos"
+    dados_brutos.mkdir(parents=True)
+    dados_processados = tmp_path / "dados" / "processados"
+    brutos = pd.concat(
+        [produtos_brutos_variados_exemplo, produtos_brutos_variados_exemplo.iloc[[0]]],
+        ignore_index=True,
+    ).assign(codg_item=6300113.0, desc_ref="ARROZ BRANCO")
+    brutos.to_csv(dados_brutos / "todos_mercados_2026-01-01.csv", index=False)
+    dicionario_canonico_exemplo.assign(**{"Unnamed: 3": None}).to_csv(
+        dados_brutos / "dicionario_canonico.csv", sep=";", index=False
+    )
+
+    relatorio = construcao_dataset.executar_limpeza(dados_brutos, dados_processados)
+
+    produtos = pd.read_parquet(dados_processados / "produtos_limpos.parquet")
+    dicionario = pd.read_parquet(dados_processados / "dicionario_limpo.parquet")
+    assert relatorio["duplicatas_exatas_removidas"] == 1
+    assert len(produtos) == len(produtos_brutos_variados_exemplo)
+    assert not {"codg_item", "desc_ref", "match_score"} & set(produtos.columns)
+    assert "Unnamed: 3" not in dicionario.columns
+    rastreio = (dados_processados / "relatorio_limpeza.json").read_text(encoding="utf-8")
+    assert "sha256_brutos" in rastreio
