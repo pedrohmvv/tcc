@@ -61,6 +61,10 @@ dev = [
     "pytest>=8.0",
     "mypy>=1.0",
     "pre-commit>=3.0",
+    "ipykernel>=7.4.0",
+    "nbconvert>=7.17.1",
+    "nbformat>=5.11.1",
+    "nbclient>=0.11.0",
 ]
 
 # ── Ferramentas ──────────────────────────────────────────────────────────────
