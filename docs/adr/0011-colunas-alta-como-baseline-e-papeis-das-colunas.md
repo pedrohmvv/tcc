@@ -24,6 +24,7 @@ Princípio que organiza este ADR: **treino, validação e teste operam exclusiva
 - (a) Caracterização descritiva na EDA (script 02), como já era.
 - (b) **Baseline "ALTA atual"** (script 04): `desc_ref`/`codg_item` como predição de entrada canônica e `match_score` como score de confiança (permite curva Precision × Recall por limiar), avaliados **contra o teste manual**, com o mesmo harness dos demais baselines (McNemar, tamanho de efeito, IC — ADR-0008). Aplica-se apenas à fatia produto × canônico; o `codg_item` não existe para pares produto × produto.
 - (c) Análise de erro (script 06), comparando onde ALTA e SLM discordam — somente depois do teste congelado e das métricas fixadas.
+- (d) Diagnóstico estrutural de integridade da base (notebook de sanity check): taxa de nulos, se `codg_item` existe no dicionário e se `desc_ref` é coerente com ele. Só agregados — sem exibir linhas, amostrar ou filtrar por esses campos, e sem usar o resultado para selecionar pares.
 
 **Proibido (mantém e detalha o ADR-0010):**
 - Usar como rótulo, supervisão distante, dado de treino ou de validação (inclui seleção de hiperparâmetros e early stopping).
