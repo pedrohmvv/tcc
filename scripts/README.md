@@ -18,7 +18,7 @@
 |---|--------|------|---------|-------|
 | 01 | `01_coleta_dados.py` | — | — | `dados/brutos/` validado (base ALTA + dicionário canônico; brutos são imutáveis) |
 | 02 | `02_analise_exploratoria.py` | 001 | `dados/brutos/` | estatísticas descritivas e figuras em `resultados/` |
-| 03 | `03_construcao_dataset.py` | 001 | `dados/brutos/`, anotação manual (`docs/protocolo_anotacao.md`) | partições treino/val/teste e candidatos em `dados/processados/` |
+| 03 | `03_construcao_dataset.py` | 001 | `dados/brutos/` (só na limpeza), anotação manual (`docs/protocolo_anotacao.md`) | base limpa (`produtos_limpos.parquet`, `dicionario_limpo.parquet`, `relatorio_limpeza.json` — ver `docs/limpeza_dados.md`), depois candidatos e partições em `dados/processados/` |
 | 04 | `04_baselines.py` | 002 | `dados/processados/` | baselines clássicos + LLaMA zero-shot em `resultados/metricas/` |
 | 05 | `05_finetuning.py` | 003 | `dados/processados/` | adaptador LoRA do Cross-Encoder em `modelos/` |
 | 06 | `06_avaliacao_exportacao.py` | 004 | `dados/processados/`, `modelos/` | métricas, ablação, tabelas/figuras exportadas para `latex/tcc_artigo/` |

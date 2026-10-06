@@ -7,7 +7,8 @@
 Produzir partições treino/validação/teste sem vazamento, combinando geração assistida (treino) e anotação manual independente (teste), a partir de dados reais do projeto ALTA.
 
 ## Requisitos funcionais
-1. Gerar candidatos via blocagem lexical (TF-IDF/BM25) do produto bruto contra o dicionário canônico (ADR-0006).
+0. Limpar a base antes de qualquer outra etapa (`limpar_base`/`executar_limpeza`), lendo `dados/brutos/` sem alterá-lo e gravando `dados/processados/{produtos_limpos,dicionario_limpo}.parquet` + `relatorio_limpeza.json` (contagens e SHA-256). Remove só defeito objetivo de coleta (duplicatas exatas); marca, sem remover, texto repetido na mesma loja e preço não positivo; remove as colunas vazias sem nome do dicionário e as colunas do matcher ALTA (ADR-0011). Nunca remove ruído linguístico de PDV. Critérios e justificativas em `docs/limpeza_dados.md`. Todas as etapas seguintes consomem a base limpa.
+1. Gerar candidatos via blocagem lexical (TF-IDF/BM25) do produto (base limpa) contra o dicionário canônico (ADR-0006).
 2. Aplicar supervisão distante: pares com correspondência de marca + unidade normalizada recebem rótulo provisório automático.
 3. Invocar o Dataset Generator (Dharma) para gerar pares sintéticos de TREINO apenas — paráfrases/variações das entradas reais do dicionário canônico (nunca gera as entradas canônicas em si).
 4. Ingerir o arquivo de anotação manual (produzido fora do pipeline automatizado, seguindo `docs/protocolo_anotacao.md`) como fonte do conjunto de TESTE.
