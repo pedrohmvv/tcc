@@ -87,11 +87,11 @@ pipeline: coleta eda construir-dataset baselines finetuning avaliar ## 🚀  Exe
 	@echo ""
 
 .PHONY: coleta
-coleta: ## 📥  01 — Carrega base ALTA + dicionário canônico
+coleta: ## 📥  01 — Valida brutos ALTA e grava a base limpa (ADR-0012)
 	@echo ""
 	@echo "  $(BOLD)$(MAGENTA)📥  Etapa 01 · Carregando dados brutos...$(RESET)"
 	$(PYTHON) $(SCRIPTS)/01_coleta_dados.py
-	@echo "  $(GREEN)✅  Dados brutos validados em dados/brutos/$(RESET)"
+	@echo "  $(GREEN)✅  Brutos validados; base limpa em dados/processados/$(RESET)"
 	@echo ""
 
 .PHONY: eda

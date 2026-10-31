@@ -119,3 +119,8 @@ CONTRIBUTING.md
 CHANGELOG.md
 
 modelo-academico/
+
+# Clone do repositório da TAIL (github.com/TailUFPB/invoice-data-normalizer):
+# sem LICENSE e sem autorização escrita (ADR-0013); contém avaliações de
+# usuários do Mercado Livre e tem .git próprio. Nunca versionar aqui.
+invoice-data-normalizer/
