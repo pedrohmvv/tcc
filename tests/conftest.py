@@ -31,6 +31,7 @@ def produtos_brutos_exemplo() -> pd.DataFrame:
                 "description": "Água Mineral Sem Gás Indaia 5l",
                 "unit": "UN",
                 "price": 13.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
                 "source": "ajuba_api",
                 "collected_at": "2026-09-10 12:38:09",
             },
@@ -39,8 +40,58 @@ def produtos_brutos_exemplo() -> pd.DataFrame:
                 "description": "Agua Mineral C/gas Grf Pet 1,5l Indaia",
                 "unit": "UN",
                 "price": 4.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
                 "source": "ajuba_api",
                 "collected_at": "2026-09-10 12:38:09",
+            },
+        ]
+    )
+
+
+@pytest.fixture
+def produtos_brutos_variados_exemplo() -> pd.DataFrame:
+    """Amostra com múltiplas fontes/estados, para testar distribuições (spec 001, tarefa 1.1.1)."""
+    return pd.DataFrame(
+        [
+            {
+                "product_id": 1,
+                "description": "Água Mineral Sem Gás Indaia 5l",
+                "unit": "UN",
+                "price": 13.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
+                "source": "ajuba_api",
+                "collected_at": "2026-09-10 12:38:09",
+                "match_score": 0.92,
+            },
+            {
+                "product_id": 2,
+                "description": "Agua Mineral C/gas Grf Pet 1,5l Indaia",
+                "unit": "UN",
+                "price": 4.99,
+                "location": "PB, João Pessoa, Pedro Gondim",
+                "source": "ajuba_api",
+                "collected_at": "2026-09-10 12:38:09",
+                "match_score": 0.65,
+            },
+            {
+                "product_id": 3,
+                "description": "Arroz Branco Tio Joao 1kg",
+                "unit": "UN",
+                "price": 6.49,
+                "location": "CE, Fortaleza, Centro",
+                "source": "diniz_api",
+                "collected_at": "2026-09-10 12:40:00",
+                "match_score": 0.88,
+            },
+            {
+                "product_id": 3,
+                "description": "Arroz Branco Tio Joao 1kg",
+                "unit": "UN",
+                "price": 6.79,
+                "location": "PI, Teresina, Centro",
+                "source": "guedes_api",
+                "collected_at": "2026-09-10 12:41:00",
+                "match_score": 0.71,
             },
         ]
     )
@@ -53,6 +104,32 @@ def dicionario_canonico_exemplo() -> pd.DataFrame:
         [
             {"desc_alim": "AGUA MINERAL", "codg_item1": 8201004, "cod_padrao": 99},
             {"desc_alim": "ARROZ BRANCO", "codg_item1": 6300113, "cod_padrao": 99},
+        ]
+    )
+
+
+@pytest.fixture
+def produtos_brutos_inversao_exemplo() -> pd.DataFrame:
+    """Par com o mesmo multiconjunto de tokens em ordem diferente, lojas diferentes.
+
+    Fixture dedicada (não estende `produtos_brutos_variados_exemplo`) para
+    isolar o teste de detecção de inversão de ordem sem recalcular as
+    dezenas de asserções numéricas já fixadas sobre a outra fixture.
+    """
+    return pd.DataFrame(
+        [
+            {
+                "product_id": 10,
+                "description": "Suco Uva Del Valle 1,5L",
+                "source": "ajuba_api",
+                "location": "PB, João Pessoa, Pedro Gondim",
+            },
+            {
+                "product_id": 11,
+                "description": "Suco Del Valle Uva 1,5l",
+                "source": "diniz_api",
+                "location": "CE, Fortaleza, Centro",
+            },
         ]
     )
 

@@ -1,0 +1,8 @@
+# Config da EDA (script 02). A tabela de heterogeneidade da Introdução só usa pares de mesmo SKU
+# que o autor confirmou: depois de rodar o script 02, leia
+# resultados/metricas/candidatos_heterogeneidade.csv e liste aqui os `id_par` que são o mesmo
+# produto (mesma marca, variante e tamanho, escritos de formas diferentes), cada um entre
+# aspas, por exemplo ['a1b2c3d4e5f6']. Lista vazia = a tabela não é regenerada.
+seed: 42
+n_candidatos_heterogeneidade: 20
+heterogeneidade_confirmados: ['0692786ddafe', '13f289d8813d', '3ec659512d92', '25fe49bb15b8', '6f490bbfdf26', '4b77740ad09f']

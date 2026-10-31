@@ -21,16 +21,14 @@ Mapeamento canônico (implementar nesta direção; ver `CLAUDE.md` e `specs/`):
 
 | Script | Spec | Saída esperada |
 |---|---|---|
-| `01_coleta_dados.py` | — | `dados/brutos/` (base ALTA + dicionário; brutos são imutáveis) |
-| `02_analise_exploratoria.py` | 001 | estatísticas em `resultados/` |
+| `01_coleta_dados.py` | 001 (RF0) | valida `dados/brutos/` (imutáveis) e grava a base limpa em `dados/processados/` (ADR-0012) |
+| `02_analise_exploratoria.py` | 001 | EDA da base limpa: estatísticas em `resultados/` + tabelas/figuras de EDA em `latex/tcc_artigo/` |
 | `03_construcao_dataset.py` | 001 | partições e candidatos em `dados/processados/` |
 | `04_baselines.py` | 002 | preditores clássicos + LLaMA zero-shot |
 | `05_finetuning.py` | 003 | LoRA do Cross-Encoder |
 | `06_avaliacao_exportacao.py` | 004 | métricas + exportação para `latex/tcc_artigo/` |
 
-Os arquivos no disco ainda podem usar nomes do template (`03_preprocessamento.py`, `04_treinamento_modelo.py`, `05_avaliacao_modelo.py`, `06_exportar_figuras_eps.py`). Isso é dívida de adaptação — não tratar esse I/O (churn, `.joblib` genérico, pasta `tex/`) como o alvo. Ao reescrever, seguir a tabela acima e a spec correspondente.
-
-Não criar subdiretórios fora das saídas esperadas em `dados/`, `modelos/`, `resultados/` e `latex/tcc_artigo/`.
+Não criar subdiretórios fora das saídas esperadas em `dados/`, `modelos/`, `resultados/` e `latex/tcc_artigo/`. Configs de etapas estocásticas ficam em `configs/` (YAML versionados).
 
 ## 3. Testes (`tests/`)
 
@@ -46,7 +44,13 @@ Matplotlib/Seaborn em teste: backend `Agg` ou mock de `savefig`.
 
 Única saída de texto do TCC: `latex/tcc_artigo/` (`abntex2[article]`). Compilar com `make latex DOC=tcc_artigo` (`latexmk`).
 
-Figuras e tabelas em `latex/tcc_artigo/figuras/` e `tabelas/` são geradas pelo script 06 — não editar à mão. Strings LaTeX exportadas do Pandas precisam preservar escapes (`replace("_", r"\_")` e equivalentes).
+Três categorias de arquivo em `latex/tcc_artigo/figuras/` e `tabelas/`, com regras distintas:
+
+- **Tabelas/figuras de EDA** (caracterização da base, spec 001 — comprimento de descrições, n-gramas, vocabulário, formas de unidade, exemplos de ruído, heterogeneidade) — geradas pelo script 02, **nunca editadas à mão**. Hoje: `tab_heterogeneidade_exemplos.tex`, `tab_comprimento_descricoes.tex`, `tab_ngramas.tex`, `tab_vocabulario.tex`, `tab_formas_unidade.tex`, `tab_exemplos_ruido.tex`, `fig_comprimento_descricoes.tex`, `fig_jaccard_lojas.tex`.
+- **Tabelas/figuras de resultado** (números de experimento: métricas, comparações, ablação) — geradas pelo script 06, **nunca editadas à mão**. É aqui que a regra evita número digitado errado. Exceção: `tab_recall_blocagem.tex` (recall da blocagem na amostra cega) é gerada pelo script 03, junto com `resultados/metricas/recall_blocagem.csv`.
+- **Tabelas/figuras de conteúdo qualitativo** (não derivam de dado real: critérios de seleção, cronograma, diagrama do pipeline) — escritas à mão, versionadas normalmente. Hoje: `tab_criterios_selecao_slm.tex`, `tab_cronograma_execucao.tex`, `fig_pipeline.tex`.
+
+Strings LaTeX exportadas do Pandas precisam preservar escapes (`replace("_", r"\_")` e equivalentes).
 
 Não gerar `.docx` nem outros formatos para o texto final.
 

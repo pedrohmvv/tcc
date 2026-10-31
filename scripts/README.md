@@ -1,107 +1,68 @@
-# 🐍 Scripts do Pipeline de Ciência de Dados
+# Scripts do Pipeline — Entity Matching de Produtos de Supermercado
 
-> **Scripts Python numerados que formam o pipeline reprodutível do projeto. Cada script é independente, recebe entradas do anterior e gera saídas para o próximo.**
+> Pipeline numerado e sequencial: cada script consome a saída do anterior. Executável ponta a
+> ponta via `make pipeline` (ver `AGENTS.md` §2 para a regra completa e `CLAUDE.md` para o
+> mapeamento canônico e as restrições inegociáveis do TCC).
 
----
-
-## 📊 Visão Geral
+## Visão geral
 
 ```
-01_coleta_dados.py ──► 02_analise_exploratoria.py ──► 03_preprocessamento.py
+01_coleta_dados.py ──► 02_analise_exploratoria.py ──► 03_construcao_dataset.py
                                                               │
-                         06_exportar_figuras_eps.py ◄── 05_avaliacao_modelo.py ◄── 04_treinamento_modelo.py
+06_avaliacao_exportacao.py ◄── 05_finetuning.py ◄── 04_baselines.py
 ```
 
----
+## Tabela de scripts
 
-## 📋 Tabela de Scripts
+| # | Script | Spec | Entrada | Saída |
+|---|--------|------|---------|-------|
+| 01 | `01_coleta_dados.py` | 001 (RF0) | `dados/brutos/` (imutáveis) | base limpa: `produtos_limpos.parquet`, `dicionario_limpo.parquet`, `relatorio_limpeza.json` em `dados/processados/` (ver `docs/limpeza_dados.md`, ADR-0012) |
+| 02 | `02_analise_exploratoria.py` | 001 | base limpa (`dados/processados/`); brutos só para `match_score` | métricas em `resultados/` e tabelas/figuras de EDA em `latex/tcc_artigo/` |
+| 03 | `03_construcao_dataset.py` | 001 | base limpa (`dados/processados/`), anotação manual (`docs/protocolo_anotacao.md`) | candidatos e partições em `dados/processados/` (blocagem 1a produto × dicionário feita, config em `configs/blocagem.yaml`; 1b produto × produto pendente) |
+| 04 | `04_baselines.py` | 002 | `dados/processados/` | baselines clássicos + LLaMA zero-shot em `resultados/metricas/` |
+| 05 | `05_finetuning.py` | 003 | `dados/processados/` | adaptador LoRA do Cross-Encoder em `modelos/` |
+| 06 | `06_avaliacao_exportacao.py` | 004 | `dados/processados/`, `modelos/` | métricas, ablação, tabelas/figuras exportadas para `latex/tcc_artigo/` |
 
-| # | Script | Entrada | Saída | Tempo* |
-|---|--------|---------|-------|:------:|
-| 01 | `01_coleta_dados.py` | — (gera dados sintéticos) | `dados/brutos/dataset_clientes.csv` | ~2s |
-| 02 | `02_analise_exploratoria.py` | `dados/brutos/dataset_clientes.csv` | `resultados/figuras/*.png`, `resultados/metricas/estatisticas_descritivas.csv` | ~5s |
-| 03 | `03_preprocessamento.py` | `dados/brutos/dataset_clientes.csv` | `dados/processados/dataset_{processado,treino,teste}.csv` | ~3s |
-| 04 | `04_treinamento_modelo.py` | `dados/processados/dataset_treino.csv` | `modelos/*.joblib`, `resultados/metricas/validacao_cruzada.csv` | ~15s |
-| 05 | `05_avaliacao_modelo.py` | `dados/processados/dataset_teste.csv`, `modelos/*.joblib` | `resultados/figuras/*.png`, `resultados/metricas/*.csv`, `latex/*/tabelas/*.tex` | ~10s |
-| 06 | `06_exportar_figuras_eps.py` | `resultados/figuras/*.png` | `latex/*/figuras/*.eps` | ~20s |
+Cada spec em `specs/00X-*/requirements.md` detalha os requisitos funcionais e critérios de
+aceite do script correspondente. Os ADRs relacionados a cada decisão estão listados no topo de
+cada spec.
 
-\* Tempos aproximados em um computador moderno com o dataset de demonstração (1.000 registros).
+## Como executar
 
----
-
-## 🚀 Como Executar
-
-### Pipeline completo (recomendado)
+Pipeline completo:
 ```bash
 make pipeline
 ```
 
-### Scripts individuais
+Scripts individuais (ordem importa — cada um depende da saída do anterior):
 ```bash
 uv run python scripts/01_coleta_dados.py
 uv run python scripts/02_analise_exploratoria.py
-# ... e assim por diante, na ordem
+# ... e assim por diante
 ```
 
-### Reexecutar apenas a partir de um ponto
-Se você alterou apenas o treinamento, não precisa reexecutar a coleta e EDA:
-```bash
-uv run python scripts/04_treinamento_modelo.py
-uv run python scripts/05_avaliacao_modelo.py
-uv run python scripts/06_exportar_figuras_eps.py
-```
+## Restrições que valem para qualquer script deste pipeline
 
----
+Ver `CLAUDE.md` para a lista completa; as mais relevantes para quem for editar código aqui:
 
-## 🔧 O que Cada Script Faz (em detalhe)
+- Cross-Encoder é a única arquitetura de matching (ADR-0001) — não implementar Bi-Encoder/híbrido.
+- Nunca usar o Dataset Generator (Dharma) para gerar ou rotular o conjunto de teste (ADR-0004).
+- Treino, validação e teste usam só o texto dos nomes (`description` e `desc_alim`). As colunas
+  `codg_item`, `desc_ref` e `match_score` nunca alimentam rótulo, treino, validação, blocagem nem
+  anotação (ADR-0010/0011); só os scripts 02, 04 (baseline "ALTA atual", após congelar o teste) e
+  06 as leem, direto dos brutos. O 01 as remove ao gravar a base limpa; nada em
+  `dados/processados/` pode contê-las (ADR-0011/0012).
+- Split por produto canônico sempre **antes** de qualquer geração/aumentação (script 03).
+- Seeds fixas e configs versionadas em toda etapa estocástica (skill `reprodutibilidade-ml`).
+- Tabelas/figuras de **resultado** em `latex/tcc_artigo/` são geradas pelo script 06, nunca
+  editadas à mão (ver `AGENTS.md` §4 para a distinção com tabelas de conteúdo qualitativo).
 
-### 01 — Coleta de Dados
-Gera um dataset **fictício** de 1.000 clientes de telecomunicações usando NumPy. Os dados simulam relações realistas entre variáveis (ex: mais reclamações → menor satisfação → maior churn). Inclui valores ausentes intencionais (~5%) para demonstrar técnicas de imputação.
+## Debug
 
-**Para adaptar:** Substitua o corpo de `gerar_dataset()` por código que carregue seu dataset real (leitura de CSV, chamada de API, web scraping, etc.).
-
-### 02 — Análise Exploratória (EDA)
-Gera estatísticas descritivas e 3 tipos de visualização: histogramas segmentados por churn, heatmap de correlação de Pearson e gráficos de barras de churn por categoria.
-
-**Para adaptar:** Ajuste as listas de colunas (`colunas_num`, `colunas_cat`) para suas variáveis. Adicione novas visualizações conforme necessário.
-
-### 03 — Pré-processamento
-Aplica a pipeline de limpeza: imputação de missing values (mediana/moda), winsorização de outliers, feature engineering (renda por produto, taxa de reclamação, faixa etária, cliente premium), one-hot encoding e normalização com StandardScaler. Divide treino/teste com stratified split.
-
-**Para adaptar:** Modifique as funções de tratamento para suas variáveis. A estratégia de imputação deve ser escolhida conforme a natureza de cada variável (mediana para assimétricas, média para normais, moda para categóricas).
-
-### 04 — Treinamento de Modelos
-Treina 3 classificadores (Regressão Logística, Random Forest, LightGBM) com validação cruzada estratificada (5-fold). Se o LightGBM não estiver instalado, usa GradientBoostingClassifier do sklearn como fallback. Salva os modelos treinados em formato `.joblib`.
-
-**Para adaptar:** Adicione ou remova modelos no dicionário `modelos` da função `definir_modelos()`. Para ajustar hiperparâmetros, altere os parâmetros do construtor de cada classificador.
-
-### 05 — Avaliação de Modelos
-Calcula métricas no conjunto de teste (AUC-ROC, F1, Acurácia), gera curvas ROC, gráfico de importância de features, e tabelas LaTeX (comparação de modelos, coeficientes, matriz de confusão, estatísticas descritivas, dicionário de dados). As tabelas são salvas em **todos** os diretórios `latex/<doc>/tabelas/`.
-
-**Para adaptar:** Ajuste as métricas conforme seu problema (ex: adicione Recall, Precisão). Para problemas multiclasse, a geração de tabelas LaTeX precisará ser adaptada.
-
-### 06 — Exportação de Figuras EPS
-Converte todas as figuras PNG em `resultados/figuras/` para o formato vetorial EPS (alta qualidade tipográfica) e as distribui para cada diretório `latex/<doc>/figuras/`. Também gera programaticamente o diagrama do pipeline metodológico.
-
-**Para adaptar:** Geralmente não precisa de modificação. Se você adicionar novas figuras nos scripts anteriores, elas serão automaticamente convertidas e distribuídas.
-
----
-
-## 🌱 Configurações Globais
-
-Todos os scripts compartilham estas configurações para garantir reprodutibilidade:
-
-| Configuração | Valor | Onde |
-|-------------|-------|------|
-| `SEED` | 42 | Topo de cada script |
-| `PROPORCAO_TESTE` | 0.20 | Script 03 |
-| `K_FOLDS` | 5 | Script 04 |
-
----
-
-## 🐛 Dicas de Debug
-
-- **Erro "FileNotFoundError":** Execute os scripts na ordem (01 → 06). Cada script depende da saída do anterior.
-- **Erro "ModuleNotFoundError":** Execute `uv sync` para instalar dependências.
-- **Aviso "LightGBM not found":** O script 04 usa GradientBoostingClassifier como fallback. Para instalar LightGBM: `uv sync --group ml`.
-- **Figuras não aparecem no PDF:** Verifique se executou o script 06 e depois recompilou o LaTeX com `make latex`.
+- **`NotImplementedError`:** scripts ainda esqueleto (ver estado de implementação em
+  `docs/plano_desenvolvimento.md` §1.0). Implementar seguindo a spec correspondente.
+- **`FileNotFoundError`:** execute os scripts na ordem (01 → 06); cada um depende da saída do
+  anterior.
+- **`ModuleNotFoundError`:** rode `uv sync` (ou `uv sync --extra finetuning` para o script 05).
+- **Figuras/tabelas não aparecem no PDF:** confira se o script 06 rodou e recompile com
+  `make latex DOC=tcc_artigo`.
