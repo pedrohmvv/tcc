@@ -30,9 +30,14 @@ Decisões não devem ser reabertas sem um novo ADR substituindo o anterior. Ver 
 | [0004](docs/adr/0004-estrategia-ground-truth-treino-teste.md) | **Crítico:** treino via Dataset Generator (Dharma), teste 100% anotado manualmente e independente do Generator |
 | [0005](docs/adr/0005-confiabilidade-teste-reteste.md) | Confiabilidade via teste-reteste intra-anotador (Kappa ≥ 0,75), não Kappa inter-anotador |
 | [0006](docs/adr/0006-blocagem-classica-tfidf-bm25.md) | Blocagem via TF-IDF/BM25 clássico, não uma arquitetura aprendida |
-| [0007](docs/adr/0007-escopo-catalogo-dicionario.md) | Escopo fechado na subtarefa catálogo-dicionário; matching intra-base é consequência transitiva |
+| [0007](docs/adr/0007-escopo-catalogo-dicionario.md) | Escopo na subtarefa catálogo-dicionário; **emendado pelos ADRs 0013 e 0014** (matching entre produtos tem adaptador próprio e é a fatia principal) |
 | [0008](docs/adr/0008-teste-estatistico-mcnemar.md) | Significância via teste de McNemar + tamanho de efeito, sem superdimensionar a hipótese |
 | [0009](docs/adr/0009-contingencia-computacional.md) | Plano de contingência computacional (nuvem acadêmica / Colab Pro / fallback Gemma 2 2B) |
+| [0010](docs/adr/0010-colunas-vazamento-proibidas.md) | `codg_item`, `desc_ref` e `match_score` são vazamento proibido |
+| [0011](docs/adr/0011-colunas-alta-como-baseline-e-papeis-das-colunas.md) | Papéis das colunas do ALTA; matcher ALTA só como baseline |
+| [0012](docs/adr/0012-limpeza-no-script-01-e-eda-sobre-base-limpa.md) | Limpeza no script 01; EDA sobre a base limpa |
+| [0013](docs/adr/0013-dados-tail-e-regras-de-match-por-tipo-de-par.md) | Dados da TAIL como reforço; duas regras de match por tipo de par; dois adaptadores LoRA |
+| [0014](docs/adr/0014-produto-x-produto-como-fatia-principal.md) | Produto × produto é a fatia principal; produto × dicionário, a secundária |
 
 As duas restrições mais rígidas do projeto são o **ADR-0001** (nunca implementar Bi-Encoder/híbrido) e o **ADR-0004** (nunca usar o Dataset Generator para gerar ou rotular o conjunto de teste — isso invalidaria a avaliação inteira).
 

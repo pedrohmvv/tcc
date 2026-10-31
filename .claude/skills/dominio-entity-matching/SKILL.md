@@ -20,7 +20,7 @@ description: Conhecimento de domínio de Entity Matching (conceitos, arquitetura
 
 ## Especificidades deste projeto
 - Domínio: produtos de supermercado, PT-BR, ruído de sistemas de PDV (abreviação, inversão de tokens, unidades diferentes, marcas regionais, granularidade variável).
-- Duas subtarefas: catálogo-dicionário (foco deste TCC) e intra-base (resolvida por transitividade + validação suplementar, ADR-0007).
+- Duas subtarefas: matching entre produtos de lojas distintas (**fatia principal**, nível SKU, ADR-0014) e catálogo-dicionário (**fatia secundária**, categoria e variante). A transitividade vale só para categoria (ADR-0013).
 - Regime de recurso: ausência total de ground truth no início — tratado como contribuição metodológica, não limitação a esconder.
 
 ## Onde isso já foi decidido

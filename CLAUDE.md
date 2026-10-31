@@ -6,9 +6,9 @@
 
 TCC — *Entity Matching em Produtos de Supermercado com Small Language Models Fine-Tuned*. Curso de Ciência de Dados para Negócios, UFPB. Orientador: Prof. Hilton Martins de Brito Ramalho. Execução individual, 16 semanas, dedicação parcial. Vinculado ao projeto CNPq/ALTA (monitoramento de preços em PB/CE/PI) e à infraestrutura da Dharma-AI.
 
-Problema: mapear descrições heterogêneas de produtos (ruído de PDV) a um dicionário canônico (~1.500 entradas), via fine-tuning de um SLM formulado como Cross-Encoder.
+Problema: decidir se duas descrições heterogêneas de produtos (ruído de PDV) são o mesmo SKU (**fatia principal, produto × produto**, ADR-0014) e mapear produtos a um dicionário canônico (~1.500 entradas; **fatia secundária**), via fine-tuning de um SLM formulado como Cross-Encoder, com um adaptador LoRA por tipo de par.
 
-**A proposta de TCC aprovada pelo orientador (v3) é a fonte de verdade para objetivos, metodologia e cronograma.** Os `docs/adr/` registram as decisões arquiteturais que saíram dela; os `specs/` detalham a implementação de cada componente. Não reabra uma decisão registrada em ADR sem justificativa explícita e um novo ADR substituindo-o.
+**A proposta de TCC aprovada pelo orientador (v3) é a fonte de verdade para objetivos, metodologia e cronograma.** Os `docs/adr/` registram as decisões arquiteturais que saíram dela; os `specs/` detalham a implementação de cada componente. Não reabra uma decisão registrada em ADR sem justificativa explícita e um novo ADR substituindo-o. **Exceção registrada:** o ADR-0014 (decisão do autor, 2026-10-31) inverte a prioridade das fatias em relação à proposta v3; até o `main.tex` ser atualizado (tarefa 5.3 do plano), vale o ADR.
 
 ## Estrutura do repositório
 
@@ -16,16 +16,18 @@ Problema: mapear descrições heterogêneas de produtos (ruído de PDV) a um dic
 latex/tcc_artigo/        ← ÚNICO formato usado (abntex2[article]); os outros 7 formatos do template foram removidos
   main.tex                  texto do TCC
   referencias.bib           só entradas verificadas (ver skill verificacao-citacoes)
-  figuras/, tabelas/         gerados por scripts/02_* (EDA) ou scripts/06_* (resultados); nunca editados à mão — ver AGENTS.md §4
+  figuras/, tabelas/         gerados por scripts/02_* (EDA), scripts/03_* (recall da blocagem) ou scripts/06_* (resultados); nunca editados à mão — ver AGENTS.md §4
 
 dados/
   brutos/                   dados originais do ALTA (imutáveis)
-  processados/              partições treino/val/teste, candidatos, anotações
+  processados/              base limpa (script 01), partições treino/val/teste, candidatos, anotações
+
+configs/                  ← YAML versionados (`blocagem.yaml`: seed, varredura de k, método e k congelados)
 
 scripts/                  ← pipeline numerado, roda via `make pipeline`
-  01_coleta_dados.py         carrega base ALTA + dicionário canônico
-  02_analise_exploratoria.py estatísticas descritivas (spec 001)
-  03_construcao_dataset.py   blocagem, candidatos, Dataset Generator (treino), ingestão de anotação manual (teste), split anti-vazamento, augmentation (spec 001)
+  01_coleta_dados.py         valida os brutos do ALTA e grava a base limpa em dados/processados/ (ADR-0012)
+  02_analise_exploratoria.py EDA sobre a base limpa → métricas + tabelas/figuras de EDA (spec 001)
+  03_construcao_dataset.py   blocagem (1a produto × dicionário feita; 1b produto × produto pendente), candidatos, Dataset Generator (treino), ingestão de anotação manual (teste), split anti-vazamento, augmentation (spec 001)
   04_baselines.py            TF-IDF/BM25/Levenshtein/Jaccard/embeddings genéricos + LLaMA zero-shot (spec 002)
   05_finetuning.py           LoRA do Cross-Encoder (spec 003)
   06_avaliacao_exportacao.py métricas, McNemar, ablação, pipeline progressivo, análise de erro; exporta para latex/ (spec 004)
@@ -47,7 +49,9 @@ specs/                    ← requisitos + design por componente, antes de imple
 
 - **LaTeX é a única saída de texto do TCC.** Nunca gerar `.docx` ou outro formato para o texto final — isso ficou em Claude.ai como fase de proposta, já encerrada.
 - **Cross-Encoder é a única arquitetura de matching neste TCC** (ADR-0001). Bi-Encoder e híbrido são trabalho futuro — não implementar, mesmo que pareça "melhorar" um resultado.
-- **Nunca usar o Dataset Generator (Dharma) para gerar ou rotular o conjunto de teste** (ADR-0004). Ele serve só ao treino. Violar isso invalida a avaliação inteira do TCC.
+- **Nunca usar o Dataset Generator (Dharma), nem qualquer outro gerador ou LLM (inclusive o `attack_augmentation` da TAIL e LLM-as-judge), para gerar ou rotular o conjunto de teste ou de validação** (ADR-0004, emendado pelo ADR-0013). Violar isso invalida a avaliação inteira do TCC. O Dataset Generator está suspenso (D-5).
+- **Duas regras de match por tipo de par** (ADR-0013): produto × dicionário decide categoria e variante; produto × produto decide SKU (marca e tamanho). Dois adaptadores LoRA, um por tipo de par. **Produto × produto é a fatia e o teste principais; produto × dicionário é a fatia secundária** (ADR-0014).
+- **Nada da TAIL é versionado, redistribuído ou publicado sem autorização escrita** (ADR-0013). `invoice-data-normalizer/` está no `.gitignore`.
 - **Nunca adicionar entrada a `referencias.bib` sem verificação em fonte primária** (skill `verificacao-citacoes`). Isso vale mesmo para referências "óbvias" ou lembradas de treinamento.
 - **Seeds fixas e configs versionadas em toda etapa estocástica** (skill `reprodutibilidade-ml`) — particionamento, geração, treino.
 - **Split por produto canônico antes de qualquer geração/augmentation** — nunca depois. Vazamento entre partições invalida a Seção 4 inteira da proposta.
