@@ -1,6 +1,6 @@
 # ADR-0004: Separação de origem dos rótulos — treino via Generator, teste manual independente
 
-**Status:** Aceito — CRÍTICO, não reabrir sem revisão extensa
+**Status:** Aceito — CRÍTICO, não reabrir sem revisão extensa. **Emendado pelo ADR-0013:** a proibição de gerador no teste passa a valer para qualquer gerador ou LLM (Dataset Generator, `attack_augmentation` da TAIL, LLM-as-judge, predições de LLM), e entram novas fontes de treino (TAIL) e um teste externo exploratório. O teste principal continua manual, sobre a ALTA. **Emendado também pelo ADR-0014:** o tamanho do teste (~300–500 pares) era a estimativa para produto × dicionário; o tamanho por fatia está em aberto (produto × produto é a principal). A proibição de gerador/LLM no teste e na validação não muda.
 
 ## Contexto
 Ausência total de ground truth anotado no início do projeto (risco primário do TCC). A Dharma-AI disponibiliza um Dataset Generator movido inteiramente a LLM (todo o pipeline de geração, avaliação e extensão de dados passa por chamadas de LLM — não há caminho no código que gere dados sem LLM).

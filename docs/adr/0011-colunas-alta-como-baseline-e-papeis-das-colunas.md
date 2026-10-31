@@ -1,6 +1,6 @@
 # ADR-0011: Papéis das colunas da base e uso das colunas do matcher ALTA como baseline
 
-**Status:** Aceito — emenda o ADR-0010 (mantém todas as proibições de rótulo/treino; acrescenta um uso permitido)
+**Status:** Aceito — emenda o ADR-0010 (mantém todas as proibições de rótulo/treino; acrescenta um uso permitido). **Emendado pelo ADR-0012** (2026-10-06): a limpeza — e com ela a remoção das colunas do matcher ALTA de `dados/processados/` — passa a acontecer no script 01; as regras de uso deste ADR não mudam.
 
 ## Contexto
 O ADR-0010 proibiu `codg_item`, `desc_ref` e `match_score` "em nenhuma etapa", inclusive na avaliação, e só permitiu citar `match_score` como contexto da EDA. A verificação de 2026-10-06 sobre o extrato real mostrou algo que muda o aproveitamento dessas colunas: `codg_item` está preenchido em 80,8% dos registros, 100% dos códigos preenchidos existem em `codg_item1` do dicionário canônico, e `desc_ref` é exatamente o `desc_alim` do código correspondente. Ou seja, elas contêm as **predições de um matcher em produção resolvendo a mesma tarefa do TCC** (produto → entrada canônica), com score de confiança (`match_score`). Isso é um baseline legítimo, e o mais relevante para a recomendação 5 do parecer (insuficiência dos métodos clássicos) — desde que seja pontuado contra o padrão-ouro manual, nunca usado como verdade.

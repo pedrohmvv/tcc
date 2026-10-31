@@ -1,6 +1,6 @@
 # ADR-0007: Escopo delimitado à subtarefa catálogo-dicionário
 
-**Status:** Aceito
+**Status:** Aceito — **emendado pelo ADR-0013**: a transitividade vale só para categoria (dois produtos na mesma entrada do dicionário não são necessariamente o mesmo SKU), e produto × produto em nível SKU tem adaptador LoRA próprio, treinado e avaliado separadamente; deixa de valer a generalização "sem retreinamento" descrita abaixo. **Emendado também pelo ADR-0014:** o foco passa a ser produto × produto (fatia principal), com catálogo-dicionário como fatia secundária completa. A alternativa "duas avaliações completas e independentes", rejeitada abaixo por custo, e o item "avaliação plena da subtarefa intra-base fica como trabalho futuro" deixam de valer.
 
 ## Contexto
 EM neste projeto tem duas subtarefas: (1) matching intra-base (mesmo produto entre lojas distintas) e (2) matching catálogo-dicionário (produto da base → entrada canônica). O parecer do orientador (v2) apontou ambiguidade sobre qual seria o foco.
