@@ -4,7 +4,8 @@
 ===========================================================================
 
 Spec: specs/001-construcao-dataset-ground-truth/requirements.md
-ADRs: 0006 (blocagem TF-IDF/BM25), 0007 (escopo do dicionário)
+ADRs: 0006 (blocagem TF-IDF/BM25), 0007 (escopo do dicionário), 0011, 0012,
+      0013, 0014 (produto × produto é a fatia principal; o dicionário, a secundária)
 
 Objetivo:
     Caracterizar a base real de produtos coletados (heterogeneidade de
@@ -13,15 +14,21 @@ Objetivo:
     conjunto de teste anotado manualmente.
 
 Entradas:
+    dados/processados/{produtos_limpos,dicionario_limpo}.parquet
+        (base limpa gravada pelo script 01 — toda a EDA a descreve; ADR-0012)
     dados/brutos/todos_mercados_*.csv
-    dados/brutos/dicionario_canonico.csv
+        (só para `match_score`, sobre os brutos deduplicados pelo critério C1;
+         uso (a) do ADR-0011)
 
 Saídas:
     resultados/metricas/estatisticas_descritivas.csv    (tarefa 1.1.1)
     resultados/metricas/distribuicoes_categoricas.csv   (tarefa 1.1.1)
     resultados/metricas/taxonomia_ruido.csv              (tarefa 1.1.2)
     resultados/metricas/distribuicao_match_score.csv     (tarefa 1.1.3, ADR-0010)
-    latex/tcc_artigo/tabelas/tab_heterogeneidade_exemplos.tex (tarefa 1.1.4)
+    resultados/metricas/{comprimento_descricoes,ngramas,vocabulario,jaccard_lojas,
+                         inversoes_ordem,formas_unidade,exemplos_ruido,
+                         candidatos_heterogeneidade}.csv (EDA textual)
+    latex/tcc_artigo/tabelas/tab_*.tex  e  latex/tcc_artigo/figuras/fig_*.{png,tex}
     resultados/figuras/distribuicao_source.png           (tarefa 1.1.5)
 
 Status: tarefa 1.1 (spec 001) implementada. Falta 1.1.7 — leitura e
@@ -33,10 +40,11 @@ Uso:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import unicodedata
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import TypedDict
 
@@ -46,6 +54,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
+import yaml  # noqa: E402
 
 
 class ContagensBasicas(TypedDict):
@@ -67,6 +76,8 @@ logger = logging.getLogger(__name__)
 
 SEED = 42
 DADOS_BRUTOS = Path("dados/brutos")
+DADOS_PROCESSADOS = Path("dados/processados")
+CONFIG_EDA = Path("configs/eda.yaml")
 RESULTADOS_METRICAS = Path("resultados/metricas")
 RESULTADOS_FIGURAS = Path("resultados/figuras")
 LATEX_TABELAS = Path("latex/tcc_artigo/tabelas")
@@ -253,7 +264,7 @@ def _contem_subsequencia(tokens: list[str], ngrama: tuple[str, ...]) -> bool:
 def contar_ngramas(
     df_produtos: pd.DataFrame, n: int, top_k: int = 10, seed: int = SEED
 ) -> list[dict[str, object]]:
-    """Top-k n-gramas (tokens normalizados, sem stopwords mínimas) na base bruta.
+    """Top-k n-gramas (tokens normalizados, sem stopwords mínimas) nas descrições de PDV.
 
     Cada linha traz uma descrição real que contém o n-grama (amostra
     determinística via `seed`) e quais detectores de ruído já existentes
@@ -439,7 +450,7 @@ def gerar_tabela_vocabulario_tex(vocabulario: Vocabulario, caminho: Path) -> Non
         ("Tokens exclusivos de uma loja", "tokens_exclusivos_uma_loja"),
         ("— idem, com frequência $\\geq$ 2", "tokens_exclusivos_uma_loja_freq_min2"),
         ("Vocabulário do dicionário canônico", "vocabulario_dicionario"),
-        ("— presente na base bruta", "tokens_dicionario_presentes_na_base"),
+        ("— presente na base", "tokens_dicionario_presentes_na_base"),
     ]
     linhas_tabela = "\n".join(
         f"{rotulo} & {vocabulario[chave]} \\\\"  # type: ignore[literal-required]
@@ -755,13 +766,13 @@ def gerar_tabela_comprimentos_tex(comparacao: ComparacaoComprimentos, caminho: P
         "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
         "\\begin{table}[htbp]\n"
         "\\centering\n"
-        "\\caption{Comprimento das descrições: base bruta vs. dicionário canônico}\n"
+        "\\caption{Comprimento das descrições: PDV vs. dicionário canônico}\n"
         "\\label{tab:comprimento-descricoes}\n"
         "\\small\n"
         "\\begin{tabular}{lrrrr}\n"
         "\\toprule\n"
         " & \\multicolumn{2}{c}{Caracteres} & \\multicolumn{2}{c}{Tokens} \\\\\n"
-        "Estatística & Bruto & Dicionário & Bruto & Dicionário \\\\\n"
+        "Estatística & PDV & Dicionário & PDV & Dicionário \\\\\n"
         "\\midrule\n"
         f"{linhas_tabela}\n"
         "\\bottomrule\n"
@@ -784,18 +795,18 @@ def gerar_figura_comprimentos(
 
     fig, (ax_caracteres, ax_tokens) = plt.subplots(1, 2, figsize=(10, 4))
 
-    ax_caracteres.hist(caracteres_bruto, bins=20, alpha=0.6, density=True, label="Bruto")
+    ax_caracteres.hist(caracteres_bruto, bins=20, alpha=0.6, density=True, label="PDV")
     ax_caracteres.hist(caracteres_dicionario, bins=20, alpha=0.6, density=True, label="Dicionário")
     ax_caracteres.set_xlabel("Caracteres")
     ax_caracteres.set_ylabel("Densidade")
     ax_caracteres.legend()
 
-    ax_tokens.hist(tokens_bruto, bins=15, alpha=0.6, density=True, label="Bruto")
+    ax_tokens.hist(tokens_bruto, bins=15, alpha=0.6, density=True, label="PDV")
     ax_tokens.hist(tokens_dicionario, bins=15, alpha=0.6, density=True, label="Dicionário")
     ax_tokens.set_xlabel("Tokens")
     ax_tokens.legend()
 
-    fig.suptitle("Comprimento das descrições: base bruta vs. dicionário canônico")
+    fig.suptitle("Comprimento das descrições: PDV vs. dicionário canônico")
     fig.tight_layout()
     fig.savefig(caminho)
     plt.close(fig)
@@ -807,7 +818,7 @@ def gerar_figura_comprimentos_tex(caminho: Path, nome_arquivo_png: str) -> None:
         "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
         "\\begin{figure}[htbp]\n"
         "\\centering\n"
-        "\\caption{Comprimento das descrições: base bruta vs. dicionário canônico}\n"
+        "\\caption{Comprimento das descrições: PDV vs. dicionário canônico}\n"
         "\\label{fig:comprimento-descricoes}\n"
         f"\\includegraphics[width=\\textwidth]{{{nome_arquivo_png}}}\n"
         "\\vspace{2mm}\n"
@@ -817,54 +828,168 @@ def gerar_figura_comprimentos_tex(caminho: Path, nome_arquivo_png: str) -> None:
     caminho.write_text(conteudo, encoding="utf-8")
 
 
-def selecionar_exemplos_heterogeneidade(
-    df_produtos: pd.DataFrame,
-    df_dicionario: pd.DataFrame,
-    n_exemplos: int = 3,
-    seed: int = SEED,
-) -> list[dict[str, str]]:
-    """Seleciona pares reais (loja A, loja B) por entrada canônica (spec 001, 1.1.4).
+_TAMANHO_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s?(kg|gr|ml|lt|und|un|g|l)\b", re.IGNORECASE)
+_UNIDADE_BASE = {
+    "kg": (1000.0, "g"),
+    "g": (1.0, "g"),
+    "gr": (1.0, "g"),
+    "l": (1000.0, "ml"),
+    "lt": (1000.0, "ml"),
+    "ml": (1.0, "ml"),
+    "un": (1.0, "un"),
+    "und": (1.0, "un"),
+}
+COLUNAS_CANDIDATOS_SKU = [
+    "id_par",
+    "supermercado_a",
+    "supermercado_b",
+    "source_a",
+    "source_b",
+    "tamanho",
+    "tokens_comuns",
+]
 
-    Heurística de correspondência pela frase canônica completa normalizada
-    (não só o primeiro token — "ARROZ" sozinho colidiria "ARROZ BRANCO" com
-    "ARROZ INTEGRAL") — não é a blocagem da tarefa 1.2, serve só para
-    ilustrar a heterogeneidade com dados reais em vez de exemplos
-    inventados (D1 conflito 3, D6). Requer candidatos de pelo menos duas
-    fontes (`source`) distintas para cada entrada, para que o par ilustre
-    de fato a variação entre lojas.
+
+def extrair_tamanho(descricao: str) -> tuple[float, str] | None:
+    """Primeira quantidade com unidade da descrição, em unidade base (g, ml ou un).
+
+    `1L`, `1000ML` e `0,9L`/`900ML` dão o mesmo valor, para comparar tamanhos entre lojas.
+    Devolve `None` quando a descrição não traz quantidade com unidade.
     """
-    descricoes_normalizadas = df_produtos["description"].map(normalizar_para_comparacao)
-    exemplos: list[dict[str, str]] = []
-    for _, linha_dicionario in df_dicionario.iterrows():
-        canonico = str(linha_dicionario["desc_alim"])
-        frase_canonica = normalizar_para_comparacao(canonico)
-        # Ancorado ao início: descrições de PDV tipicamente abrem com o nome
-        # do produto, o que evita falso positivo de produto correlato que só
-        # cita a entrada canônica de passagem (ex.: um tempero para arroz).
-        padrao = re.compile(rf"^{re.escape(frase_canonica)}\b")
-        mascara = descricoes_normalizadas.map(lambda texto: bool(padrao.match(texto)))
-        candidatos = df_produtos[mascara]
-        fontes_distintas = sorted(candidatos["source"].unique())
-        if len(fontes_distintas) < 2:
-            continue
+    correspondencia = _TAMANHO_RE.search(descricao)
+    if correspondencia is None:
+        return None
+    fator, base = _UNIDADE_BASE[correspondencia.group(2).lower()]
+    valor = float(correspondencia.group(1).replace(",", ".")) * fator
+    return round(valor, 3), base
 
-        fonte_a, fonte_b = fontes_distintas[0], fontes_distintas[1]
-        descricao_a = (
-            candidatos[candidatos["source"] == fonte_a]["description"]
-            .sample(1, random_state=seed)
-            .iloc[0]
+
+def _tokens_de_marca(descricao: str) -> set[str]:
+    """Tokens candidatos a marca/variante: sem dígito e com ao menos 3 caracteres."""
+    return {
+        t
+        for t in tokenizar(descricao, normalizar=True)
+        if len(t) >= 3 and not any(c.isdigit() for c in t)
+    }
+
+
+def _listar_candidatos_mesmo_sku(df_produtos: pd.DataFrame, max_df: int) -> pd.DataFrame:
+    """Todos os pares de lojas diferentes que podem ser o mesmo SKU escrito de formas diferentes.
+
+    Heurística só para propor candidatos (o autor confirma o mérito): mesmo tamanho normalizado,
+    ao menos 2 tokens raros em comum (frequência de documento <= `max_df`, indício de marca),
+    texto normalizado diferente e multiconjunto de tokens diferente (descarta inversão pura).
+    O bloqueio por tamanho e o índice invertido evitam comparar todos os pares.
+    """
+    base = (
+        df_produtos[["description", "source"]]
+        .assign(texto=lambda d: d["description"].map(normalizar_para_comparacao))
+        .sort_values(["texto", "source", "description"], kind="stable")
+        .drop_duplicates(["texto", "source"])
+        .reset_index(drop=True)
+    )
+    marca_por_texto = {
+        texto: _tokens_de_marca(descricao)
+        for texto, descricao in zip(base["texto"], base["description"], strict=True)
+    }
+    frequencia_documento = Counter(t for tokens in marca_por_texto.values() for t in tokens)
+    raros = {t for t, c in frequencia_documento.items() if c <= max_df}
+
+    grupos: dict[tuple[float, str], list[int]] = defaultdict(list)
+    for i, descricao in enumerate(base["description"]):
+        tamanho = extrair_tamanho(descricao)
+        if tamanho is not None:
+            grupos[tamanho].append(i)
+
+    linhas: dict[str, dict[str, object]] = {}
+    for tamanho, indices in grupos.items():
+        postagens: dict[str, list[int]] = defaultdict(list)
+        for i in indices:
+            for token in marca_por_texto[base.at[i, "texto"]] & raros:
+                postagens[token].append(i)
+        comuns: dict[tuple[int, int], set[str]] = defaultdict(set)
+        for token, itens in postagens.items():
+            for a, i in enumerate(itens):
+                for j in itens[a + 1 :]:
+                    if base.at[i, "source"] != base.at[j, "source"]:
+                        comuns[(i, j)].add(token)
+        for (i, j), tokens in comuns.items():
+            texto_i, texto_j = base.at[i, "texto"], base.at[j, "texto"]
+            if len(tokens) < 2 or texto_i == texto_j:
+                continue
+            if sorted(tokenizar(texto_i)) == sorted(tokenizar(texto_j)):
+                continue
+            a, b = sorted((i, j), key=lambda k: base.at[k, "source"])
+            id_par = hashlib.sha1("||".join(sorted((texto_i, texto_j))).encode()).hexdigest()[:12]
+            linhas.setdefault(
+                id_par,
+                {
+                    "id_par": id_par,
+                    "supermercado_a": base.at[a, "description"],
+                    "supermercado_b": base.at[b, "description"],
+                    "source_a": base.at[a, "source"],
+                    "source_b": base.at[b, "source"],
+                    "tamanho": f"{tamanho[0]:g} {tamanho[1]}",
+                    "tokens_comuns": " ".join(sorted(tokens)),
+                },
+            )
+    return (
+        pd.DataFrame(list(linhas.values()), columns=COLUNAS_CANDIDATOS_SKU)
+        .sort_values("id_par")
+        .reset_index(drop=True)
+    )
+
+
+def _amostrar_candidatos(candidatos: pd.DataFrame, n: int, seed: int) -> pd.DataFrame:
+    if len(candidatos) <= n:
+        return candidatos
+    return candidatos.sample(n=n, random_state=seed).sort_values("id_par").reset_index(drop=True)
+
+
+def selecionar_candidatos_mesmo_sku(
+    df_produtos: pd.DataFrame, n: int = 20, seed: int = SEED, max_df: int = 50
+) -> pd.DataFrame:
+    """Amostra de até `n` pares candidatos a mesmo SKU entre lojas (determinística com `seed`)."""
+    return _amostrar_candidatos(_listar_candidatos_mesmo_sku(df_produtos, max_df), n, seed)
+
+
+def selecionar_exemplos_confirmados(
+    candidatos: pd.DataFrame, confirmados: list[str]
+) -> list[dict[str, str]]:
+    """Pares que o autor confirmou como mesmo SKU (por `id_par`), no formato da tabela."""
+    por_id = candidatos.set_index("id_par")
+    desconhecidos = [i for i in confirmados if i not in por_id.index]
+    if desconhecidos:
+        raise ValueError(f"id_par confirmado(s) fora dos candidatos: {desconhecidos}")
+    return [
+        {
+            "supermercado_a": str(por_id.at[i, "supermercado_a"]),
+            "supermercado_b": str(por_id.at[i, "supermercado_b"]),
+        }
+        for i in confirmados
+    ]
+
+
+class ConfigEDA(TypedDict):
+    seed: int
+    n_candidatos_heterogeneidade: int
+    heterogeneidade_confirmados: list[str]
+
+
+def carregar_config_eda(caminho: Path) -> ConfigEDA:
+    """Lê `configs/eda.yaml`; os `id_par` confirmados precisam vir entre aspas (texto)."""
+    cfg = yaml.safe_load(caminho.read_text(encoding="utf-8"))
+    confirmados = cfg["heterogeneidade_confirmados"]
+    if not isinstance(confirmados, list) or not all(isinstance(i, str) for i in confirmados):
+        raise ValueError(
+            f"heterogeneidade_confirmados em {caminho} deve ser uma lista de textos "
+            "(coloque cada id_par entre aspas)"
         )
-        descricao_b = (
-            candidatos[candidatos["source"] == fonte_b]["description"]
-            .sample(1, random_state=seed)
-            .iloc[0]
-        )
-        exemplos.append(
-            {"supermercado_a": descricao_a, "supermercado_b": descricao_b, "canonico": canonico}
-        )
-        if len(exemplos) >= n_exemplos:
-            break
-    return exemplos
+    return ConfigEDA(
+        seed=int(cfg["seed"]),
+        n_candidatos_heterogeneidade=int(cfg["n_candidatos_heterogeneidade"]),
+        heterogeneidade_confirmados=confirmados,
+    )
 
 
 def gerar_figura_distribuicao_source(contagens: ContagensBasicas, caminho: Path) -> None:
@@ -882,36 +1007,35 @@ def gerar_figura_distribuicao_source(contagens: ContagensBasicas, caminho: Path)
 
 
 def gerar_tabela_heterogeneidade_tex(exemplos: list[dict[str, str]], caminho: Path) -> None:
-    """Escreve a tabela LaTeX de exemplos de heterogeneidade (tarefa 1.1.4).
+    """Escreve a tabela LaTeX de pares do mesmo produto descritos de formas diferentes.
 
-    Substitui a versão escrita à mão (D1 conflito 3, D6) — mesma estrutura
-    de colunas/legenda/label consumida por `main.tex` via `\\input`.
+    Só recebe pares que o autor confirmou como mesmo SKU (ADR-0014); mantém o label
+    consumido por `main.tex` via `\\input`.
     """
     linhas_tabela = "\n".join(
         f"{escapar_latex(exemplo['supermercado_a'])} & "
-        f"{escapar_latex(exemplo['supermercado_b'])} & "
-        f"{escapar_latex(exemplo['canonico'])} \\\\"
+        f"{escapar_latex(exemplo['supermercado_b'])} \\\\"
         for exemplo in exemplos
     )
     conteudo = (
         "% Gerado automaticamente por scripts/02_analise_exploratoria.py — não editar à mão.\n"
         "\\begin{table}[htbp]\n"
         "\\centering\n"
-        "\\caption{Exemplos de heterogeneidade nas descrições de produtos}\n"
+        "\\caption{Exemplos do mesmo produto descrito de formas diferentes em lojas distintas}\n"
         "\\label{tab:heterogeneidade}\n"
         "\\small\n"
         "\\resizebox{\\textwidth}{!}{%\n"
-        "\\begin{tabular}{lll}\n"
+        "\\begin{tabular}{ll}\n"
         "\\toprule\n"
-        "\\textbf{Supermercado A} & \\textbf{Supermercado B} & "
-        "\\textbf{Canônico (Dicionário)} \\\\\n"
+        "\\textbf{Supermercado A} & \\textbf{Supermercado B} \\\\\n"
         "\\midrule\n"
         f"{linhas_tabela}\n"
         "\\bottomrule\n"
         "\\end{tabular}%\n"
         "}\n"
         "\\vspace{2mm}\n"
-        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA}\n"
+        "\\fonte{Elaborado pelo autor a partir de dados do projeto ALTA "
+        "(pares conferidos pelo autor)}\n"
         "\\end{table}\n"
     )
     caminho.write_text(conteudo, encoding="utf-8")
@@ -981,6 +1105,14 @@ def carregar_produtos(diretorio_brutos: Path) -> pd.DataFrame:
 def carregar_dicionario(diretorio_brutos: Path) -> pd.DataFrame:
     """Carrega o dicionário canônico ALTA."""
     return pd.read_csv(diretorio_brutos / "dicionario_canonico.csv", sep=";")
+
+
+def carregar_base_limpa(diretorio_processados: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Carrega a base limpa gravada pelo script 01 (ADR-0012): produtos e dicionário."""
+    return (
+        pd.read_parquet(diretorio_processados / "produtos_limpos.parquet"),
+        pd.read_parquet(diretorio_processados / "dicionario_limpo.parquet"),
+    )
 
 
 def _salvar_contagens_escalares(contagens: ContagensBasicas, caminho: Path) -> None:
@@ -1083,22 +1215,33 @@ def _salvar_distribuicoes(contagens: ContagensBasicas, caminho: Path) -> None:
 
 
 def estatisticas_descritivas(
-    diretorio_brutos: Path,
+    diretorio_processados: Path,
+    diretorio_brutos: Path = DADOS_BRUTOS,
     diretorio_saida: Path = RESULTADOS_METRICAS,
     diretorio_latex_tabelas: Path = LATEX_TABELAS,
     diretorio_figuras: Path = RESULTADOS_FIGURAS,
     diretorio_latex_figuras: Path = LATEX_FIGURAS,
+    caminho_config: Path = CONFIG_EDA,
 ) -> ContagensBasicas:
-    """Calcula e persiste as estatísticas descritivas da spec 001 (EDA, incl. tarefas 1.1.1-1.1.4).
+    """Calcula e persiste as estatísticas descritivas da base limpa (spec 001; ADR-0012).
 
-    Ver specs/001-construcao-dataset-ground-truth/requirements.md.
+    `match_score` não existe na base limpa (ADR-0011): é lido dos brutos,
+    deduplicados pelo mesmo critério C1 da limpeza, para cobrir os mesmos
+    registros que o restante da EDA.
     """
-    df_produtos = carregar_produtos(diretorio_brutos)
-    df_dicionario = carregar_dicionario(diretorio_brutos)
+    df_produtos, df_dicionario = carregar_base_limpa(diretorio_processados)
+    brutos_deduplicados = carregar_produtos(diretorio_brutos).drop_duplicates(keep="first")
     contagens = calcular_contagens_basicas(df_produtos, df_dicionario)
     ruido = caracterizar_ruido_pdv(df_produtos)
-    distribuicao_match_score = caracterizar_match_score(df_produtos)
-    exemplos_heterogeneidade = selecionar_exemplos_heterogeneidade(df_produtos, df_dicionario)
+    distribuicao_match_score = caracterizar_match_score(brutos_deduplicados)
+    config = carregar_config_eda(caminho_config)
+    candidatos_sku = _listar_candidatos_mesmo_sku(df_produtos, max_df=50)
+    amostra_candidatos_sku = _amostrar_candidatos(
+        candidatos_sku, config["n_candidatos_heterogeneidade"], config["seed"]
+    )
+    exemplos_heterogeneidade = selecionar_exemplos_confirmados(
+        candidatos_sku, config["heterogeneidade_confirmados"]
+    )
     comparacao_comprimentos = comparar_comprimentos(df_produtos, df_dicionario)
     unigramas = contar_ngramas(df_produtos, n=1, top_k=10)
     bigramas = contar_ngramas(df_produtos, n=2, top_k=10)
@@ -1123,11 +1266,20 @@ def estatisticas_descritivas(
     _salvar_inversoes_ordem(inversoes_ordem, diretorio_saida / "inversoes_ordem.csv")
     pd.DataFrame(formas_unidade).to_csv(diretorio_saida / "formas_unidade.csv", index=False)
     pd.DataFrame(exemplos_ruido).to_csv(diretorio_saida / "exemplos_ruido.csv", index=False)
+    amostra_candidatos_sku.to_csv(diretorio_saida / "candidatos_heterogeneidade.csv", index=False)
 
     diretorio_latex_tabelas.mkdir(parents=True, exist_ok=True)
-    gerar_tabela_heterogeneidade_tex(
-        exemplos_heterogeneidade, diretorio_latex_tabelas / "tab_heterogeneidade_exemplos.tex"
-    )
+    if exemplos_heterogeneidade:
+        gerar_tabela_heterogeneidade_tex(
+            exemplos_heterogeneidade, diretorio_latex_tabelas / "tab_heterogeneidade_exemplos.tex"
+        )
+    else:
+        logger.warning(
+            "Nenhum par confirmado em %s: a tabela de heterogeneidade não foi regenerada. "
+            "Confira os candidatos em %s e liste os id_par.",
+            caminho_config,
+            diretorio_saida / "candidatos_heterogeneidade.csv",
+        )
     gerar_tabela_comprimentos_tex(
         comparacao_comprimentos, diretorio_latex_tabelas / "tab_comprimento_descricoes.tex"
     )
@@ -1158,7 +1310,7 @@ def estatisticas_descritivas(
     )
 
     logger.info(
-        "EDA: %d registros, %d entradas no dicionário, %d exemplos de heterogeneidade. "
+        "EDA: %d registros, %d entradas no dicionário, %d pares de heterogeneidade confirmados. "
         "Estatísticas em %s, tabelas em %s, figuras em %s",
         contagens["total_registros"],
         contagens["total_entradas_dicionario"],
@@ -1172,7 +1324,12 @@ def estatisticas_descritivas(
 
 def main() -> None:
     estatisticas_descritivas(
-        DADOS_BRUTOS, RESULTADOS_METRICAS, LATEX_TABELAS, RESULTADOS_FIGURAS, LATEX_FIGURAS
+        DADOS_PROCESSADOS,
+        DADOS_BRUTOS,
+        RESULTADOS_METRICAS,
+        LATEX_TABELAS,
+        RESULTADOS_FIGURAS,
+        LATEX_FIGURAS,
     )
 
 

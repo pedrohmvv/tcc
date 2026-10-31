@@ -16,9 +16,9 @@
 
 | # | Script | Spec | Entrada | Saída |
 |---|--------|------|---------|-------|
-| 01 | `01_coleta_dados.py` | — | — | `dados/brutos/` validado (base ALTA + dicionário canônico; brutos são imutáveis) |
-| 02 | `02_analise_exploratoria.py` | 001 | `dados/brutos/` | estatísticas descritivas e figuras em `resultados/` |
-| 03 | `03_construcao_dataset.py` | 001 | `dados/brutos/` (só na limpeza), anotação manual (`docs/protocolo_anotacao.md`) | base limpa (`produtos_limpos.parquet`, `dicionario_limpo.parquet`, `relatorio_limpeza.json` — ver `docs/limpeza_dados.md`), depois candidatos e partições em `dados/processados/` |
+| 01 | `01_coleta_dados.py` | 001 (RF0) | `dados/brutos/` (imutáveis) | base limpa: `produtos_limpos.parquet`, `dicionario_limpo.parquet`, `relatorio_limpeza.json` em `dados/processados/` (ver `docs/limpeza_dados.md`, ADR-0012) |
+| 02 | `02_analise_exploratoria.py` | 001 | base limpa (`dados/processados/`); brutos só para `match_score` | métricas em `resultados/` e tabelas/figuras de EDA em `latex/tcc_artigo/` |
+| 03 | `03_construcao_dataset.py` | 001 | base limpa (`dados/processados/`), anotação manual (`docs/protocolo_anotacao.md`) | candidatos e partições em `dados/processados/` (blocagem 1a produto × dicionário feita, config em `configs/blocagem.yaml`; 1b produto × produto pendente) |
 | 04 | `04_baselines.py` | 002 | `dados/processados/` | baselines clássicos + LLaMA zero-shot em `resultados/metricas/` |
 | 05 | `05_finetuning.py` | 003 | `dados/processados/` | adaptador LoRA do Cross-Encoder em `modelos/` |
 | 06 | `06_avaliacao_exportacao.py` | 004 | `dados/processados/`, `modelos/` | métricas, ablação, tabelas/figuras exportadas para `latex/tcc_artigo/` |
@@ -50,7 +50,8 @@ Ver `CLAUDE.md` para a lista completa; as mais relevantes para quem for editar c
 - Treino, validação e teste usam só o texto dos nomes (`description` e `desc_alim`). As colunas
   `codg_item`, `desc_ref` e `match_score` nunca alimentam rótulo, treino, validação, blocagem nem
   anotação (ADR-0010/0011); só os scripts 02, 04 (baseline "ALTA atual", após congelar o teste) e
-  06 as leem, direto dos brutos. As saídas do 03 e a anotação não podem contê-las.
+  06 as leem, direto dos brutos. O 01 as remove ao gravar a base limpa; nada em
+  `dados/processados/` pode contê-las (ADR-0011/0012).
 - Split por produto canônico sempre **antes** de qualquer geração/aumentação (script 03).
 - Seeds fixas e configs versionadas em toda etapa estocástica (skill `reprodutibilidade-ml`).
 - Tabelas/figuras de **resultado** em `latex/tcc_artigo/` são geradas pelo script 06, nunca

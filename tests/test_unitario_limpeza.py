@@ -1,5 +1,5 @@
 """
-test_unitario_construcao_dataset.py — Camadas 1 e 2: limpeza da base (spec 001, RF0).
+test_unitario_limpeza.py — Camadas 1 e 2: limpeza da base no script 01 (spec 001 RF0, ADR-0012).
 
 Fixture local e dedicada: concentra num só DataFrame cada defeito tratado pela
 limpeza (duplicata exata, texto repetido na loja, preço zero, colunas do
@@ -24,7 +24,7 @@ def _load(filename: str):
     return mod
 
 
-construcao = _load("03_construcao_dataset.py")
+coleta = _load("01_coleta_dados.py")
 
 
 def _linha(product_id, description, price, source="a_api", collected_at="2026-09-10 12:00:00"):
@@ -74,12 +74,12 @@ def dicionario_com_colunas_vazias() -> pd.DataFrame:
 
 class TestNormalizarTexto:
     def test_remove_acentos_caixa_e_espacos_nas_pontas(self) -> None:
-        assert construcao.normalizar_texto("  Açúcar Cristal ") == "ACUCAR CRISTAL"
+        assert coleta.normalizar_texto("  Açúcar Cristal ") == "ACUCAR CRISTAL"
 
 
 class TestRemoverDuplicatasExatas:
     def test_mantem_a_primeira_ocorrencia(self, base_com_defeitos: pd.DataFrame) -> None:
-        resultado = construcao.remover_duplicatas_exatas(base_com_defeitos)
+        resultado = coleta.remover_duplicatas_exatas(base_com_defeitos)
 
         assert len(resultado) == 5
         assert (resultado["product_id"] == 1).sum() == 1
@@ -87,7 +87,7 @@ class TestRemoverDuplicatasExatas:
     def test_nao_remove_linhas_que_diferem_em_alguma_coluna(
         self, base_com_defeitos: pd.DataFrame
     ) -> None:
-        resultado = construcao.remover_duplicatas_exatas(base_com_defeitos)
+        resultado = coleta.remover_duplicatas_exatas(base_com_defeitos)
 
         assert set(resultado["product_id"]) == {1, 2, 3, 4, 5}
 
@@ -96,8 +96,8 @@ class TestMarcarTextoRepetidoNaLoja:
     def test_marca_todos_os_membros_do_grupo_na_mesma_loja(
         self, base_com_defeitos: pd.DataFrame
     ) -> None:
-        base = construcao.remover_duplicatas_exatas(base_com_defeitos)
-        resultado = construcao.marcar_texto_repetido_na_loja(base)
+        base = coleta.remover_duplicatas_exatas(base_com_defeitos)
+        resultado = coleta.marcar_texto_repetido_na_loja(base)
         marcados = set(resultado.loc[resultado["texto_repetido_na_loja"], "product_id"])
 
         assert marcados == {2, 3}
@@ -105,15 +105,15 @@ class TestMarcarTextoRepetidoNaLoja:
     def test_nao_marca_mesmo_texto_em_lojas_diferentes(
         self, base_com_defeitos: pd.DataFrame
     ) -> None:
-        base = construcao.remover_duplicatas_exatas(base_com_defeitos)
-        resultado = construcao.marcar_texto_repetido_na_loja(base)
+        base = coleta.remover_duplicatas_exatas(base_com_defeitos)
+        resultado = coleta.marcar_texto_repetido_na_loja(base)
 
         assert not resultado.loc[resultado["product_id"] == 4, "texto_repetido_na_loja"].item()
 
 
 class TestMarcarPrecoInvalido:
     def test_marca_preco_zero_sem_alterar_o_valor(self, base_com_defeitos: pd.DataFrame) -> None:
-        resultado = construcao.marcar_preco_invalido(base_com_defeitos)
+        resultado = coleta.marcar_preco_invalido(base_com_defeitos)
         linha = resultado[resultado["product_id"] == 5]
 
         assert linha["preco_invalido"].all()
@@ -123,7 +123,7 @@ class TestMarcarPrecoInvalido:
 
 class TestRemoverColunasMatcherAlta:
     def test_remove_as_tres_colunas(self, base_com_defeitos: pd.DataFrame) -> None:
-        resultado = construcao.remover_colunas_matcher_alta(base_com_defeitos)
+        resultado = coleta.remover_colunas_matcher_alta(base_com_defeitos)
 
         assert not {"codg_item", "desc_ref", "match_score"} & set(resultado.columns)
         assert "description" in resultado.columns
@@ -133,7 +133,7 @@ class TestLimparDicionario:
     def test_remove_colunas_sem_nome_totalmente_vazias(
         self, dicionario_com_colunas_vazias: pd.DataFrame
     ) -> None:
-        resultado = construcao.limpar_dicionario(dicionario_com_colunas_vazias)
+        resultado = coleta.limpar_dicionario(dicionario_com_colunas_vazias)
 
         assert list(resultado.columns) == ["desc_alim", "codg_item1", "cod_padrao"]
         assert len(resultado) == 2
@@ -143,7 +143,7 @@ class TestLimparBase:
     def test_relatorio_reproduz_cada_criterio(
         self, base_com_defeitos: pd.DataFrame, dicionario_com_colunas_vazias: pd.DataFrame
     ) -> None:
-        produtos, dicionario, relatorio = construcao.limpar_base(
+        produtos, dicionario, relatorio = coleta.limpar_base(
             base_com_defeitos, dicionario_com_colunas_vazias
         )
 
@@ -160,7 +160,7 @@ class TestLimparBase:
     def test_base_limpa_nao_contem_colunas_do_matcher_alta(
         self, base_com_defeitos: pd.DataFrame, dicionario_com_colunas_vazias: pd.DataFrame
     ) -> None:
-        produtos, _, _ = construcao.limpar_base(base_com_defeitos, dicionario_com_colunas_vazias)
+        produtos, _, _ = coleta.limpar_base(base_com_defeitos, dicionario_com_colunas_vazias)
 
         assert not {"codg_item", "desc_ref", "match_score"} & set(produtos.columns)
 
@@ -169,6 +169,6 @@ class TestLimparBase:
     ) -> None:
         original = base_com_defeitos.copy()
 
-        construcao.limpar_base(base_com_defeitos, dicionario_com_colunas_vazias)
+        coleta.limpar_base(base_com_defeitos, dicionario_com_colunas_vazias)
 
         pd.testing.assert_frame_equal(base_com_defeitos, original)

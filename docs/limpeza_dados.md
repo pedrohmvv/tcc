@@ -3,7 +3,7 @@
 **Projeto:** TCC — Entity Matching em Produtos de Supermercado com SLMs Fine-Tuned
 **Autor:** Pedro Henrique Medeiros Vieira
 **Última atualização:** 2026-10-06
-**Implementação:** `scripts/03_construcao_dataset.py` (`limpar_base`, `executar_limpeza`) — spec 001, RF0
+**Implementação:** `scripts/01_coleta_dados.py` (`limpar_base`, `executar_limpeza`) — spec 001, RF0; ADR-0012
 **Diagnóstico de origem:** `notebooks/01_sanity_check.ipynb` (veredicto: 0 bloqueantes, 8 warnings)
 **Narrativa e evidências:** `notebooks/02_eda.ipynb`, Seção 6
 
@@ -41,7 +41,7 @@ Definir, de forma auditável, o que é tratado como **defeito de dado** antes da
 
 ### C2 — Texto repetido na mesma loja
 **Regra.** Marcar, sem remover, todos os registros de um grupo (descrição normalizada, `source`) com mais de um membro.
-**Justificativa.** Em todos os grupos o `product_id` é diferente e o timestamp é o mesmo, o que descarta "atualização de preço durante o dia". Em 149 dos 185 grupos o preço difere (mediana +22,6%). O cenário mais provável são **SKUs distintos do catálogo da loja com o mesmo nome** (ex.: `CUECA LUPO AM BOXER MICROF.` com 7 ids — tamanhos/cores fora do texto). Não é defeito comprovado de coleta. **Consequência para a etapa seguinte:** ao gerar candidatos e sortear pares para anotação, o script 03 deve deduplicar por texto normalizado, para o anotador não rotular a mesma descrição duas vezes. Como o split é por produto canônico, textos idênticos caem na mesma partição — sem vazamento.
+**Justificativa.** Em todos os grupos o `product_id` é diferente e o timestamp é o mesmo, o que descarta "atualização de preço durante o dia". Em 149 dos 185 grupos o preço difere (mediana +22,6%). O cenário mais provável são **SKUs distintos do catálogo da loja com o mesmo nome** (ex.: `CUECA LUPO AM BOXER MICROF.` com 7 ids — tamanhos/cores fora do texto). Não é defeito comprovado de coleta. **Consequência para a etapa seguinte:** ao gerar candidatos e sortear pares para anotação, o script 03 (que consome a base limpa) deve deduplicar por texto normalizado, para o anotador não rotular a mesma descrição duas vezes. Como o split é por produto canônico, textos idênticos caem na mesma partição — sem vazamento.
 
 ### C3 — Preço não positivo
 **Regra.** Marcar `preco_invalido = True`; manter o registro e o valor original.
@@ -58,7 +58,7 @@ Definir, de forma auditável, o que é tratado como **defeito de dado** antes da
 ### L1–L4 — Limitações documentadas, sem tratamento
 - **L1.** Imputar `codg_item` significaria inventar predições do matcher ALTA — mudaria o baseline, não os dados de treino/teste. O baseline é reportado nas duas versões (condicionada e total), conforme ADR-0011.
 - **L2.** `cod_padrao` tem significado não confirmado com o ALTA; o `main.tex` já decidiu não usá-lo como categoria. Mantido no dicionário limpo, sem uso.
-- **L3.** Na base limpa, dos 1.722 registros sem `und_med`/`und_val` só 7,8% trazem a unidade no texto, e dos 399 sem nenhuma unidade estruturada, 0% (na base bruta: 1.756 / 7,9% e 409 / 0% — ver `notebooks/02_eda.ipynb`, §4.3). Ou seja, a ausência quase nunca é recuperável pelo texto — são majoritariamente itens vendidos por peso ou unidade (ex.: `Bife de Pernil Suíno`). Afeta só a supervisão distante (spec 001, RF2); para o par produto × canônico, tamanho diferente continua sendo match (protocolo §3.4).
+- **L3.** Na base limpa, dos 1.722 registros sem `und_med`/`und_val` só 7,8% trazem a unidade no texto, e dos 399 sem nenhuma unidade estruturada, 0% (na base bruta: 1.756 / 7,9% e 409 / 0% — ver `notebooks/02_eda.ipynb`, §4.3). Ou seja, a ausência quase nunca é recuperável pelo texto — são majoritariamente itens vendidos por peso ou unidade (ex.: `Bife de Pernil Suíno`). Afeta a supervisão distante (spec 001, RF2) e, na fatia principal produto × produto (ADR-0014), a comparação de tamanho nesses itens; para o par produto × canônico, tamanho diferente continua sendo match (protocolo §3.4).
 - **L4.** Sem série temporal: a base não representa o histórico do ALTA. Citar no §4.7.
 
 ## 4. Resultado (fonte: `dados/processados/relatorio_limpeza.json`)
@@ -74,7 +74,7 @@ Definir, de forma auditável, o que é tratado como **defeito de dado** antes da
 | SHA-256 `todos_mercados_2026-09-10.csv` | `8f6e566f…344a841b` |
 | SHA-256 do conteúdo de `produtos_limpos` | `36c9448c…5e578ff2` |
 
-Os números acima são cópia do relatório gerado pelo script 03 para esses SHA-256 dos brutos; se os brutos mudarem, regenerar e atualizar esta seção.
+Os números acima são cópia do relatório gerado pelo script 01 para esses SHA-256 dos brutos (idênticos aos da versão anterior, quando a limpeza ficava no script 03); se os brutos mudarem, regenerar e atualizar esta seção.
 
 ---
 
