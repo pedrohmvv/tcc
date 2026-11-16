@@ -1,0 +1,56 @@
+# Config da blocagem produto × produto, entre lojas (ADR-0006, ADR-0014; spec 001, RF1 "1b").
+# Pool cego em lotes: regra de parada confirmada pelo autor em 2026-10-31 (design-1b.md §5).
+# `metodo` e `k` congelados pelo autor em 2026-11-03, depois da parada do pool por alvo (75 âncoras
+# sorteadas, 33 com positivo, 81 pares positivos): TF-IDF, k=20, o mesmo método e k da 1a
+# (`blocagem.yaml`). Recall por par 93,8% (IC95% bootstrap por âncora 88,9-98,6%) e 97% das âncoras
+# com positivo; sem diferença estatística para o BM25 em k=20. Só mudar com novo registro; os
+# pares do teste são sorteados depois deste congelamento. Alvo e teto só mudam por esforço,
+# nunca pelo recall, antes do lote 2, com registro aqui.
+seed: 42
+lote_ancoras: 25
+alvo_ancoras_com_positivo: 30
+max_ancoras: 100
+profundidade_pool: 100
+ngramas: [3, 5]
+ks: [1, 5, 10, 20, 50, 100]
+metodo: tfidf
+k: 20
+tau_particao: 0.7
+n_teste: 300
+fracao_digito_divergente: 0.2
+
+# Teste produto × produto (D-13), decidido pelo autor em 2026-11-03 a partir das taxas de positivos
+# por faixa do pool (`resultados/metricas/taxas_positivos_por_faixa_pxp.csv`): cenário C, ~45% de
+# positivos esperados (faixa plausível 33-53%). Estratos exclusivos, na ordem: texto idêntico entre
+# lojas (estrato próprio, reportado à parte, Q7); tamanho divergente com score >= o mínimo abaixo
+# (negativos difíceis, 20% do teste); o resto cai na faixa do seu score. A soma é `n_teste`.
+faixas: [0.0, 0.5, 0.7, 0.9, 1.0]
+score_minimo_digito_divergente: 0.5
+n_por_estrato:
+  texto_identico: 12
+  digito_divergente: 60
+  "[0.90, 1.00]": 100
+  "[0.70, 0.90)": 100
+  "[0.50, 0.70)": 20
+  "[0.00, 0.50)": 8
+
+# Partição (T11): cada componente conexo (cosseno TF-IDF >= tau_particao, mais as arestas dos pares
+# do teste) vai inteiro para uma partição. Decisão do autor em 2026-11-13, com tau_particao mantido
+# em 0,7: componente que toca o teste -> teste; que toca o pool (fora do teste) -> validação; o
+# restante -> treino. Não há proporção a ajustar (a chave `proporcao_treino` é obsoleta e rejeitada).
+# Medido em 0,7: teste 21,8% / validação 34,4% / treino 43,8% da base; só 25 dos 81 `match` do pool
+# sobram para a validação (limitação declarada); vazamento residual 28,4%.
+
+# Opção B2 (design-treino-pxp §8, decidida pelo autor em 2026-11-13): o autor anota, entre os produtos
+# de treino, os pares de lojas diferentes com mesmo tamanho e cosseno TF-IDF >= este corte (3.974 pares
+# medidos em 0,5, ~92% dos positivos da validação). Sem a chave, a planilha do B2 não é gerada.
+b2_cosseno_minimo: 0.5
+
+# Reteste do teste (ADR-0005; protocolo §4; T10c), decidido pelo autor em 2026-11-16: 150 pares
+# (50% do teste), sorteio estratificado pelo estrato original, `incerto` entra no sorteio, Kappa
+# de 3 classes e binário. `seed_reteste` = seed + 1, fixada ANTES de ver qualquer rótulo (nunca
+# trocar olhando o resultado). A planilha só é gerada com `--reteste` e só deve ser aberta ≥ 7
+# dias depois do fim da primeira passada (último timestamp: 2026-11-16T11:30:50-03:00, ou seja,
+# a partir de 2026-11-23).
+n_reteste: 150
+seed_reteste: 43

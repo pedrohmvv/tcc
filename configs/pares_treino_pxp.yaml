@@ -1,0 +1,57 @@
+# Parte A dos pares de treino produto × produto (design-treino-pxp §5; ADR-0015; spec 001, RF2 e RF7).
+# Negativos certos (tamanho diferente nos dois lados) e positivos por perturbação do próprio texto,
+# só sobre os produtos da partição de treino. Receita aprovada pelo autor em 2026-11-13.
+seed: 42
+
+# Negativos: top-k TF-IDF no treino. Decisão do autor em 2026-11-13: incluir também os pares da
+# MESMA loja (o mesmo item em 1 L e em 500 ml), que são SKUs distintos com certeza. Com a mesma loja,
+# os negativos difíceis (cosseno >= 0,5) vão de 1.668 para 5.555 pares únicos.
+k: 20
+incluir_mesma_loja: true
+faixas_cosseno: [0.0, 0.3, 0.5, 0.7, 1.0]
+# Disponíveis (pares únicos, k=20, mesma loja incluída): [0,0-0,3) 47.322; [0,3-0,5) 31.973;
+# [0,5-0,7) 4.657; [0,7-1,0] 898. As faixas difíceis são alocadas primeiro; com o teto por produto
+# a faixa [0,5-0,7) rende no máximo 3.099 (medido em 2026-11-13), por isso 3.000. Valores iniciais,
+# ajustáveis: não são decisão de método.
+n_negativos_por_faixa:
+  "[0.00, 0.30)": 1500
+  "[0.30, 0.50)": 3000
+  "[0.50, 0.70)": 3000
+  "[0.70, 1.00]": 700
+teto_negativos_por_produto: 3
+
+# Positivos: um por produto, escolhido entre os que admitem ao menos uma das perturbações abaixo.
+n_positivos: 6000
+pesos_perturbacao:
+  unidade: 1      # 900ML <-> 0,9L, 1KG <-> 1000G (só a partir de 100 g ou 100 ml)
+  ordem: 1        # troca de lugar de dois tokens
+  abreviacao: 1   # só palavras da tabela abaixo; marca e tamanho ficam intactos
+  ruido: 1        # tira acentos ou uma letra interior de palavra longa
+
+# Tabela FECHADA de abreviações (a mineração automática foi descartada: metade saiu lixo, por
+# exemplo LATA -> LACTEA). Cada forma foi observada nos produtos de treino (DF >= 5) e a palavra
+# tem DF >= 50. Revisável pelo autor: pendência E7 em docs/pendencias_autor.md.
+abreviacoes:
+  vinho: [vh, vin]
+  biscoito: [bisc]
+  chocolate: [choc, choco]
+  tinto: [tto]
+  leite: [lt]
+  branco: [br, bco]
+  verde: [vd]
+  cerveja: [cerv]
+  recheio: [rech]
+  tradicional: [trad]
+  desnatado: [des]
+  integral: [int, integ]
+  macarrao: [mac]
+  morango: [mor]
+  espumante: [esp]
+  refrigerante: [refrig]
+  creme: [crem]
+  garrafa: [gf]
+  pacote: [pct]
+  caixa: [cx]
+  unidade: [un, und]
+  gelatina: [gel]
+  salgadinho: [salg]
