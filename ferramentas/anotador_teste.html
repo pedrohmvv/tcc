@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anotador do teste</title>
+<style>
+  :root {
+    --bg: #f6f6f3; --surface: #ffffff; --surface-2: #efefea; --text: #1d1d1b; --muted: #6b6b66;
+    --border: #dcdcd4; --accent: #2457c5; --accent-bg: #e6edfb;
+    --match: #1d7a46; --match-bg: #dff3e6; --maybe: #9a6a00; --maybe-bg: #fbf0cf;
+    --nd: #b3261e; --nd-bg: #fde4e1; --nq: #1d7a46; --df: #6b4fa0;
+    --shadow: 0 1px 2px rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1f1f1d; --surface-2: #2a2a27; --text: #ecece6; --muted: #9a9a92;
+      --border: #3a3a36; --accent: #7aa2f7; --accent-bg: #23304d;
+      --match: #5fd08a; --match-bg: #1c3a28; --maybe: #e6b84a; --maybe-bg: #3d3115;
+      --nd: #ff8a80; --nd-bg: #4a2220; --nq: #5fd08a; --df: #b79df0;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1f1f1d; --surface-2: #2a2a27; --text: #ecece6; --muted: #9a9a92;
+    --border: #3a3a36; --accent: #7aa2f7; --accent-bg: #23304d;
+    --match: #5fd08a; --match-bg: #1c3a28; --maybe: #e6b84a; --maybe-bg: #3d3115;
+    --nd: #ff8a80; --nd-bg: #4a2220; --nq: #5fd08a; --df: #b79df0; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  kbd {
+    font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2);
+    border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 2px 5px;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--surface);
+    border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+  .grow { flex: 1; }
+  .btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  @media (prefers-color-scheme: dark) { .btn.primary { color: #0d0d0c; } }
+  .status { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+  .status.ok { background: var(--match-bg); color: var(--match); }
+  .status.warn { background: var(--maybe-bg); color: var(--maybe); }
+  .status.err { background: var(--nd-bg); color: var(--nd); }
+  #banner { padding: 10px 16px; font-size: 14px; display: none; gap: 10px; align-items: center; flex-wrap: wrap; }
+  #banner.show { display: flex; }
+  #banner.err { background: var(--nd-bg); color: var(--nd); }
+  #banner.warn { background: var(--maybe-bg); color: var(--maybe); }
+
+  #welcome { margin: 10vh auto; max-width: 560px; padding: 0 16px; }
+  #welcome h2 { margin: 0 0 6px; font-size: 22px; }
+  #welcome p { color: var(--muted); margin: 6px 0 16px; }
+  #welcome .row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  #app { display: none; flex: 1; min-height: 0; }
+  #app.show { display: flex; }
+  aside {
+    width: 320px; flex: none; border-right: 1px solid var(--border); background: var(--surface);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .progress { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+  .progress b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .progress label { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+  .bar { height: 6px; background: var(--surface-2); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--match); width: 0; }
+  #pairs { overflow: auto; flex: 1; padding: 6px; }
+  .par {
+    display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; border: 0;
+    background: transparent; padding: 6px 8px; border-radius: 8px; font-size: 13px;
+  }
+  .par:hover { background: var(--surface-2); }
+  .par.cur { background: var(--accent-bg); }
+  .par .n { color: var(--muted); font-variant-numeric: tabular-nums; width: 28px; flex: none; text-align: right; }
+  .par .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .par .tag { font-size: 11px; border-radius: 999px; padding: 0 7px; flex: none; }
+  .par .tag.match { background: var(--match-bg); color: var(--match); }
+  .par .tag.nao_match { background: var(--surface-2); color: var(--muted); }
+  .par .tag.incerto { background: var(--maybe-bg); color: var(--maybe); }
+
+  main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: auto; }
+  #card { padding: 18px 24px; }
+  #card .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0 16px; }
+  @media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+  .side { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .side .desc { font-size: 22px; font-weight: 650; margin: 4px 0 8px; overflow-wrap: anywhere; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+  .chip { background: var(--surface-2); border-radius: 6px; padding: 2px 8px; color: var(--muted); }
+  .chip.m { background: var(--match-bg); color: var(--match); }
+  .chip.i { background: var(--maybe-bg); color: var(--maybe); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .rot { border: 2px solid var(--border); background: var(--surface); border-radius: 10px; padding: 10px 18px; font-weight: 650; }
+  .rot:hover { background: var(--surface-2); }
+  .rot.match.on { background: var(--match); border-color: var(--match); color: #fff; }
+  .rot.nao_match.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+  .rot.incerto.on { background: var(--maybe); border-color: var(--maybe); color: #fff; }
+  @media (prefers-color-scheme: dark) { .rot.match.on, .rot.incerto.on { color: #0d0d0c; } }
+  #obs { margin-top: 14px; }
+  #obs input { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; }
+  #obs input:focus { border-color: var(--accent); outline: none; }
+  .nq { color: var(--nq); font-weight: 700; }
+  .nd { color: var(--nd); font-weight: 800; background: var(--nd-bg); border-radius: 3px; }
+  .df { color: var(--df); text-decoration: underline dotted; text-underline-offset: 3px; }
+  footer.keys { padding: 8px 20px; border-top: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  #toast { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #toast.show { display: block; }
+  @media (max-width: 760px) { aside { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Anotador do teste</h1>
+  <span id="fileName" class="status">nenhum arquivo</span>
+  <span class="grow"></span>
+  <span id="saveStatus" class="status"></span>
+  <button class="btn" id="btnOpen" title="Abrir outra planilha">Abrir planilha…</button>
+  <button class="btn" id="btnDownload" title="Baixar uma cópia do CSV">Baixar cópia</button>
+</header>
+<div id="banner"></div>
+
+<section id="welcome">
+  <h2>Anotar o teste produto × produto</h2>
+  <p>Abra o <code>anotacoes_teste_pxp.csv</code> (teste) ou o <code>anotacoes_treino_b2_pxp.csv</code> (treino, opção B2), em <code>dados/processados/</code>. A ferramenta grava de volta no
+    próprio arquivo a cada alteração, no mesmo formato (<code>;</code>, UTF-8), sem copiar nem enviar nada.
+    Para cada par, decida só pela regra de SKU de <code>docs/protocolo_anotacao.md</code> §3: mesma marca, mesma
+    variante e mesmo tamanho. Os realces de cor ajudam a leitura; nunca decidem.</p>
+  <div class="row">
+    <button class="btn primary" id="btnOpen2">Abrir planilha…</button>
+    <button class="btn" id="btnResume" style="display:none"></button>
+  </div>
+  <p id="compat" style="font-size:13px"></p>
+  <input type="file" id="fileInput" accept=".csv,text/csv" style="display:none">
+</section>
+
+<div id="app">
+  <aside>
+    <div class="progress">
+      <div>Anotados <b id="pDone">0</b> / <b id="pTotal">0</b></div>
+      <div class="bar"><i id="pBar"></i></div>
+      <div>match <b id="pMatch">0</b> · não-match <b id="pNao">0</b> · incerto <b id="pMaybe">0</b></div>
+      <div id="pPace" style="margin-top:4px"></div>
+      <label><input type="checkbox" id="onlyPending"> só pendentes</label>
+    </div>
+    <div id="pairs"></div>
+  </aside>
+  <main>
+    <div id="card"></div>
+    <footer class="keys">
+      <span><kbd>M</kbd> match</span>
+      <span><kbd>N</kbd> não-match</span>
+      <span><kbd>I</kbd> incerto</span>
+      <span><kbd>X</kbd> limpar</span>
+      <span><kbd>O</kbd> observação</span>
+      <span><kbd>←</kbd><kbd>→</kbd> par anterior/seguinte</span>
+      <span><kbd>Enter</kbd> próximo pendente</span>
+      <span><kbd>⌘Z</kbd> desfazer</span>
+    </footer>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ---------- Lógica pura (testada em node, sem DOM) ---------- */
+const COLUNAS = ['id_par','id_a','descricao_a','und_val_a','und_med_a','id_b','descricao_b','und_val_b',
+  'und_med_b','tipo_par','origem','rotulo','observacao','timestamp_anotacao','reteste'];
+const ROTULOS = ['match', 'nao_match', 'incerto'];
+const SEP = ';';
+
+function parseCsv(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = [], field = '', inQ = false, i = 0;
+  const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        inQ = false; i++; continue;
+      }
+      field += c; i++; continue;
+    }
+    if (c === '"' && field === '') { inQ = true; i++; continue; }
+    if (c === SEP) { row.push(field); field = ''; i++; continue; }
+    if (c === '\r' || c === '\n') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = ''; i++; continue;
+    }
+    field += c; i++;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => !(r.length === 1 && r[0] === ''));
+}
+
+function escCampo(v) { return /[;"\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+
+function serializeCsv(header, rows) {
+  const linhas = [header.map(escCampo).join(SEP)];
+  for (const r of rows) linhas.push(header.map(h => escCampo(r[h] ?? '')).join(SEP));
+  return linhas.join('\n') + '\n';
+}
+
+/* Só a forma, como validar_anotacao_teste_pxp: o cabeçalho tem de ser exatamente o do contrato. */
+function lerPlanilha(text) {
+  const matriz = parseCsv(text);
+  if (!matriz.length) throw new Error('arquivo vazio');
+  const header = matriz[0];
+  const faltando = COLUNAS.filter(c => !header.includes(c));
+  if (faltando.length) throw new Error('colunas ausentes: ' + faltando.join(', '));
+  const extras = header.filter(c => !COLUNAS.includes(c));
+  if (extras.length) throw new Error('colunas inesperadas: ' + extras.join(', '));
+  const rows = matriz.slice(1).map((m, k) => {
+    if (m.length !== header.length) throw new Error('linha ' + (k + 2) + ' com ' + m.length + ' campos (esperado ' + header.length + ')');
+    const o = {}; header.forEach((h, j) => { o[h] = m[j]; }); return o;
+  });
+  if (!rows.length) throw new Error('planilha sem linhas');
+  const ids = new Set();
+  for (const r of rows) {
+    if (ids.has(r.id_par)) throw new Error('id_par duplicado: ' + r.id_par);
+    ids.add(r.id_par);
+    if (r.rotulo !== '' && !ROTULOS.includes(r.rotulo)) throw new Error('rotulo inválido "' + r.rotulo + '" em ' + r.id_par);
+  }
+  return { header, rows };
+}
+
+/* Realce de leitura: só ajuda o olho, nunca decide nada. */
+function norm(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
+const UNIDADES = { KG: ['g', 1000], G: ['g', 1], GR: ['g', 1], GRS: ['g', 1], MG: ['g', 0.001],
+  L: ['ml', 1000], LT: ['ml', 1000], LTS: ['ml', 1000], ML: ['ml', 1] };
+const RE_QTD = /^(\d+(?:[.,]\d+)?)(KG|GRS|GR|G|MG|ML|LTS|LT|L)$/;
+const RE_NUM = /^\d+(?:[.,]\d+)?$/;
+const RE_PEDACO = /[A-Za-z0-9À-ÿ.,]+|[^A-Za-z0-9À-ÿ.,]+/g;
+
+function qtdCanonica(token) {
+  const m = RE_QTD.exec(token); if (!m) return null;
+  const v = parseFloat(m[1].replace(',', '.')); if (!isFinite(v)) return null;
+  const [dim, fator] = UNIDADES[m[2]];
+  return Math.round(v * fator * 1000) / 1000 + dim;
+}
+function nucleo(p) { return norm(p).replace(/^[.,]+|[.,]+$/g, ''); }
+function tokens(texto) {
+  const t = norm(texto).replace(/(\d+(?:[.,]\d+)?)\s+(KG|GRS|GR|G|MG|ML|LTS|LT|L)\b/g, '$1$2');
+  return t.split(/[^A-Z0-9.,]+/).map(x => x.replace(/^[.,]+|[.,]+$/g, '')).filter(Boolean);
+}
+function infoLado(texto) {
+  const toks = tokens(texto);
+  const nums = new Set();
+  for (const t of toks) { const m = RE_QTD.exec(t); if (m) nums.add(m[1]); else if (RE_NUM.test(t)) nums.add(t); }
+  return { set: new Set(toks), qtd: new Set(toks.map(qtdCanonica).filter(Boolean)), nums };
+}
+function escHtml(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+/* Realça `texto` contra o outro lado (`info`): número ou palavra que o outro lado não tem. */
+function realcar(texto, info) {
+  const pedacos = texto.match(RE_PEDACO) || [];
+  const saida = [];
+  for (let i = 0; i < pedacos.length; i++) {
+    const p = pedacos[i];
+    if (!/[A-Za-z0-9À-ÿ]/.test(p)) { saida.push(escHtml(p)); continue; }
+    let core = nucleo(p), cls = '', consumido = 0;
+    if (/\d/.test(core)) {
+      let unir = core;
+      if (RE_NUM.test(core) && pedacos[i + 1] && /^\s+$/.test(pedacos[i + 1]) && pedacos[i + 2] && UNIDADES[nucleo(pedacos[i + 2])]) {
+        unir = core + nucleo(pedacos[i + 2]); consumido = 2;
+      }
+      const q = qtdCanonica(unir);
+      const ok = (q && info.qtd.has(q)) || info.set.has(unir) || (RE_NUM.test(unir) && info.nums.has(unir));
+      cls = ok ? 'nq' : 'nd';
+      if (consumido) {
+        saida.push('<span class="' + cls + '">' + escHtml(p + pedacos[i + 1] + pedacos[i + 2]) + '</span>');
+        i += consumido; continue;
+      }
+    } else if (UNIDADES[core]) {
+      cls = '';
+    } else {
+      cls = info.set.has(core) ? '' : 'df';
+    }
+    saida.push(cls ? '<span class="' + cls + '">' + escHtml(p) + '</span>' : escHtml(p));
+  }
+  return saida.join('');
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { parseCsv, serializeCsv, lerPlanilha, tokens, qtdCanonica, infoLado, realcar, COLUNAS, ROTULOS };
+}
+</script>
+<script>
+/* ---------- Estado e interface ---------- */
+if (typeof document !== 'undefined' && document.getElementById('app')) (function () {
+const $ = id => document.getElementById(id);
+const S = {
+  nome: '', handle: null, header: [], rows: [], i: 0, soPendentes: false,
+  versao: 0, versaoSalva: 0, salvando: false, erroSalvar: '', conflito: false, ultimoMod: 0,
+  salvoEm: null, desfazer: [], ritmo: [], marca: Date.now(), editandoObs: false,
+};
+const temFS = typeof window.showOpenFilePicker === 'function';
+
+/* handle do último arquivo, para reabrir sem procurar */
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('anotador_teste', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('k');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function guardarHandle(h) {
+  try { const db = await idb(); db.transaction('k', 'readwrite').objectStore('k').put(h, 'ultimo'); } catch (e) { /* opcional */ }
+}
+async function lerHandleGuardado() {
+  try {
+    const db = await idb();
+    return await new Promise(res => { const q = db.transaction('k').objectStore('k').get('ultimo'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); });
+  } catch (e) { return null; }
+}
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function banner(msg, tipo, acoes) {
+  const b = $('banner'); b.className = 'show ' + tipo; b.innerHTML = '<span></span>';
+  b.firstChild.textContent = msg;
+  (acoes || []).forEach(([rot, fn]) => { const x = document.createElement('button'); x.className = 'btn'; x.textContent = rot; x.onclick = fn; b.appendChild(x); });
+}
+function limparBanner() { $('banner').className = ''; $('banner').innerHTML = ''; }
+
+/* ---------- carregar ---------- */
+function carregarTexto(texto, nome, handle, ultimoMod) {
+  const p = lerPlanilha(texto);
+  Object.assign(S, { nome, handle, header: p.header, rows: p.rows, i: 0,
+    versao: 0, versaoSalva: 0, desfazer: [], ritmo: [], marca: Date.now(), erroSalvar: '', conflito: false,
+    editandoObs: false, ultimoMod: ultimoMod || 0, salvoEm: null });
+  const restauradas = restaurarRascunho();
+  if (restauradas) S.versao = 1; // ainda não está no arquivo
+  const primeira = S.rows.findIndex(r => r.rotulo === '');
+  S.i = primeira < 0 ? 0 : primeira;
+  limparBanner();
+  if (restauradas) setTimeout(() => toast('Rascunho restaurado: ' + restauradas + ' pares anotados neste navegador.'), 0);
+  $('welcome').style.display = 'none'; $('app').classList.add('show');
+  $('fileName').textContent = nome;
+  renderTudo();
+}
+async function carregarHandle(h) {
+  const f = await h.getFile();
+  carregarTexto(await f.text(), f.name, h, f.lastModified);
+  guardarHandle(h);
+}
+async function garantirPermissao(h) {
+  const opt = { mode: 'readwrite' };
+  if ((await h.queryPermission(opt)) === 'granted') return true;
+  return (await h.requestPermission(opt)) === 'granted';
+}
+async function abrir() {
+  try {
+    if (!temFS) { $('fileInput').click(); return; }
+    const [h] = await window.showOpenFilePicker({ id: 'teste_pxp', multiple: false,
+      types: [{ description: 'CSV do teste', accept: { 'text/csv': ['.csv'] } }] });
+    if (!(await garantirPermissao(h))) { banner('Sem permissão de escrita: o salvamento automático não funciona.', 'err'); return; }
+    await carregarHandle(h);
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    if (e.name === 'SecurityError') { banner('Este navegador bloqueou o seletor de arquivos; abrindo no modo sem salvamento automático.', 'warn'); $('fileInput').click(); return; }
+    banner('Não consegui abrir: ' + e.message, 'err');
+  }
+}
+$('fileInput').addEventListener('change', async ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  try { carregarTexto(await f.text(), f.name, null, 0); banner('Modo sem salvamento automático: use "Baixar cópia" e coloque o arquivo em dados/processados/.', 'warn'); }
+  catch (e) { banner('Arquivo inválido: ' + e.message, 'err'); }
+  ev.target.value = '';
+});
+
+/* ---------- salvar ---------- */
+let timerSalvar = null;
+function agendar() { guardarRascunho(); clearTimeout(timerSalvar); timerSalvar = setTimeout(salvar, 500); renderStatus(); }
+async function salvar() {
+  if (!S.handle || S.salvando || S.conflito) return;
+  if (S.versao === S.versaoSalva) return;
+  S.salvando = true; S.erroSalvar = ''; renderStatus();
+  const versao = S.versao;
+  try {
+    const atual = await S.handle.getFile();
+    if (S.ultimoMod && atual.lastModified !== S.ultimoMod) { S.conflito = true; mostrarConflito(); return; }
+    const w = await S.handle.createWritable();
+    await w.write(serializeCsv(S.header, S.rows));
+    await w.close();
+    S.ultimoMod = (await S.handle.getFile()).lastModified;
+    S.versaoSalva = versao; S.salvoEm = new Date();
+  } catch (e) { S.erroSalvar = e.message || String(e); }
+  finally { S.salvando = false; renderStatus(); }
+  if (!S.erroSalvar && !S.conflito && S.versao !== S.versaoSalva) agendar();
+}
+function mostrarConflito() {
+  banner('O arquivo mudou no disco depois que você o abriu. Nada foi gravado.', 'err', [
+    ['Sobrescrever com a minha versão', async () => { S.ultimoMod = (await S.handle.getFile()).lastModified; S.conflito = false; limparBanner(); salvar(); }],
+    ['Recarregar do disco (perde alterações não salvas)', async () => { try { await carregarHandle(S.handle); } catch (e) { banner(e.message, 'err'); } }],
+  ]);
+}
+function baixar() {
+  const texto = serializeCsv(S.header, S.rows), nome = S.nome || 'anotacoes_teste_pxp.csv';
+  const blob = new Blob([texto], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Cópia baixada. Coloque em dados/processados/ no lugar da planilha.');
+}
+/* Sem handle de arquivo (modo cópia), as marcações ficam num rascunho do navegador. */
+function chaveRascunho() { return 'anotador_teste:' + S.nome; }
+function guardarRascunho() {
+  if (S.handle) return;
+  try {
+    const o = {};
+    for (const r of S.rows) if (r.rotulo || r.observacao || r.timestamp_anotacao) o[r.id_par] = [r.rotulo, r.observacao, r.timestamp_anotacao];
+    localStorage.setItem(chaveRascunho(), JSON.stringify(o));
+  } catch (e) { /* sem armazenamento: segue sem rascunho */ }
+}
+function restaurarRascunho() {
+  if (S.handle) return 0;
+  let n = 0;
+  try {
+    const o = JSON.parse(localStorage.getItem(chaveRascunho()) || 'null'); if (!o) return 0;
+    for (const r of S.rows) {
+      const v = o[r.id_par];
+      if (!v || r.rotulo || r.observacao) continue; // nunca sobrepõe o que já está no arquivo
+      if (v[0] !== '' && !ROTULOS.includes(v[0])) continue;
+      [r.rotulo, r.observacao, r.timestamp_anotacao] = v; n++;
+    }
+  } catch (e) { return 0; }
+  return n;
+}
+window.addEventListener('beforeunload', ev => { if (S.versao !== S.versaoSalva) { ev.preventDefault(); ev.returnValue = ''; } });
+
+/* ---------- operações ---------- */
+function agoraIso() {
+  const d = new Date(), p = n => String(n).padStart(2, '0'), off = -d.getTimezoneOffset();
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) +
+    (off >= 0 ? '+' : '-') + p(Math.floor(Math.abs(off) / 60)) + ':' + p(Math.abs(off) % 60);
+}
+function aplicar(mudancas) {
+  const lote = [];
+  for (const [k, campo, valor] of mudancas) {
+    const r = S.rows[k]; if (r[campo] === valor) continue;
+    lote.push([k, campo, r[campo]]); r[campo] = valor;
+  }
+  if (!lote.length) return;
+  S.desfazer.push(lote); if (S.desfazer.length > 200) S.desfazer.shift();
+  S.versao++; agendar();
+}
+function desfazer() {
+  const lote = S.desfazer.pop(); if (!lote) { toast('Nada para desfazer'); return; }
+  for (const [k, campo, antigo] of lote.reverse()) S.rows[k][campo] = antigo;
+  S.i = lote[0][0];
+  S.versao++; agendar(); renderTudo(); toast('Desfeito');
+}
+function marcar(valor) {
+  const k = S.i, antes = S.rows[k].rotulo;
+  if (antes === valor) return;
+  aplicar([[k, 'rotulo', valor], [k, 'timestamp_anotacao', agoraIso()]]);
+  if (antes === '') {
+    const dt = Date.now() - S.marca; S.marca = Date.now(); if (dt < 15 * 60 * 1000) S.ritmo.push(dt);
+    irProximo(); // só avança quando o par era pendente; revisar um par já anotado não move a tela
+  } else renderTudo();
+}
+function limparMarca() { aplicar([[S.i, 'rotulo', ''], [S.i, 'timestamp_anotacao', '']]); renderTudo(); }
+function irPara(j) {
+  if (j < 0 || j >= S.rows.length) return;
+  S.i = j; S.editandoObs = false; renderTudo();
+}
+function irProximo() {
+  const n = S.rows.length;
+  for (let d = 1; d <= n; d++) {
+    const j = (S.i + d) % n;
+    if (S.rows[j].rotulo === '') { irPara(j); return; }
+  }
+  renderTudo();
+  toast('Todos os ' + n + ' pares anotados.');
+}
+function editarObs() { S.editandoObs = true; renderCartao(); const i = $('obsInput'); if (i) { i.focus(); i.select(); } }
+
+/* ---------- render ---------- */
+function renderTudo() { renderLateral(); renderCartao(); renderStatus(); }
+function renderStatus() {
+  const s = $('saveStatus');
+  if (!S.nome) { s.textContent = ''; return; }
+  let t, c = 'status';
+  if (S.erroSalvar) { t = 'Erro ao salvar: ' + S.erroSalvar; c += ' err'; }
+  else if (S.conflito) { t = 'Conflito no arquivo'; c += ' err'; }
+  else if (!S.handle) { t = S.versao ? 'Alterações não salvas (use Baixar cópia)' : 'Sem salvamento automático'; c += ' warn'; }
+  else if (S.salvando) { t = 'Salvando…'; }
+  else if (S.versao !== S.versaoSalva) { t = 'Alterações pendentes…'; c += ' warn'; }
+  else if (S.salvoEm) { t = 'Salvo às ' + S.salvoEm.toLocaleTimeString('pt-BR'); c += ' ok'; }
+  else { t = 'Sem alterações'; }
+  s.textContent = t; s.className = c;
+}
+const ROTULO_CURTO = { match: 'match', nao_match: 'não', incerto: '?' };
+function renderLateral() {
+  const c = { match: 0, nao_match: 0, incerto: 0 };
+  for (const r of S.rows) if (r.rotulo) c[r.rotulo]++;
+  const feitos = c.match + c.nao_match + c.incerto;
+  $('pairs').innerHTML = S.rows.map((r, k) => {
+    if (S.soPendentes && r.rotulo !== '' && k !== S.i) return '';
+    return '<button class="par' + (k === S.i ? ' cur' : '') + '" data-j="' + k + '"><span class="n">' + (k + 1) + '</span><span class="t">' +
+      escHtml(r.descricao_a) + '</span>' + (r.rotulo ? '<span class="tag ' + r.rotulo + '">' + ROTULO_CURTO[r.rotulo] + '</span>' : '') + '</button>';
+  }).join('');
+  $('pDone').textContent = feitos; $('pTotal').textContent = S.rows.length;
+  $('pMatch').textContent = c.match; $('pNao').textContent = c.nao_match; $('pMaybe').textContent = c.incerto;
+  $('pBar').style.width = (S.rows.length ? 100 * feitos / S.rows.length : 0) + '%';
+  if (S.ritmo.length) {
+    const ult = S.ritmo.slice(-20), med = ult.reduce((x, y) => x + y, 0) / ult.length / 1000;
+    $('pPace').textContent = 'Ritmo: ' + Math.round(med) + ' s por par (últimos ' + ult.length + ')';
+  } else $('pPace').textContent = '';
+  const cur = $('pairs').querySelector('.cur'); if (cur) cur.scrollIntoView({ block: 'nearest' });
+}
+function lado(letra, desc, val, med, outro) {
+  return '<div class="side"><div class="lbl">Produto ' + letra + '</div>' +
+    '<div class="desc">' + realcar(desc, outro) + '</div>' +
+    '<div class="chips"><span class="chip">' + escHtml(val) + ' ' + escHtml(med) + '</span></div></div>';
+}
+function renderCartao() {
+  const r = S.rows[S.i];
+  const botao = (v, rot, tecla) => '<button class="rot ' + v + (r.rotulo === v ? ' on' : '') + '" data-r="' + v + '">' + rot + ' <kbd>' + tecla + '</kbd></button>';
+  $('card').innerHTML =
+    '<div class="lbl">Par ' + (S.i + 1) + ' de ' + S.rows.length + (r.rotulo ? ' · anotado' : ' · pendente') + '</div>' +
+    '<div class="pair">' + lado('A', r.descricao_a, r.und_val_a, r.und_med_a, infoLado(r.descricao_b)) +
+    lado('B', r.descricao_b, r.und_val_b, r.und_med_b, infoLado(r.descricao_a)) + '</div>' +
+    '<div class="actions">' + botao('match', 'Match', 'M') + botao('nao_match', 'Não-match', 'N') + botao('incerto', 'Incerto', 'I') +
+    '<button class="btn" data-r="" title="Limpar o rótulo (X)">Limpar</button></div>' +
+    '<div id="obs">' + (S.editandoObs
+      ? '<input id="obsInput" value="' + escHtml(r.observacao) + '" placeholder="observação (Enter salva, Esc cancela)">'
+      : '<button class="btn" id="btnObs">observação <kbd>O</kbd></button> <span class="chip">' + escHtml(r.observacao) + '</span>') + '</div>';
+  const bo = $('btnObs'); if (bo) bo.onclick = editarObs;
+}
+
+/* ---------- eventos ---------- */
+$('card').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-r]'); if (!b) return;
+  if (b.dataset.r === '') limparMarca(); else marcar(b.dataset.r);
+});
+$('card').addEventListener('keydown', ev => {
+  if (ev.target.tagName !== 'INPUT') return;
+  if (ev.key === 'Enter') { aplicar([[S.i, 'observacao', ev.target.value.trim()]]); S.editandoObs = false; renderTudo(); ev.stopPropagation(); }
+  if (ev.key === 'Escape') { S.editandoObs = false; renderCartao(); ev.stopPropagation(); }
+});
+$('pairs').addEventListener('click', ev => { const b = ev.target.closest('.par'); if (b) irPara(+b.dataset.j); });
+$('onlyPending').addEventListener('change', ev => { S.soPendentes = ev.target.checked; renderLateral(); });
+$('btnOpen').onclick = abrir; $('btnOpen2').onclick = abrir; $('btnDownload').onclick = () => { if (S.nome) baixar(); };
+
+document.addEventListener('keydown', ev => {
+  if (!S.nome) return;
+  const alvo = ev.target.tagName;
+  if (alvo === 'INPUT' || alvo === 'TEXTAREA') return;
+  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') { ev.preventDefault(); desfazer(); return; }
+  if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+  const k = ev.key;
+  if (k === 'm' || k === 'M') marcar('match');
+  else if (k === 'n' || k === 'N') marcar('nao_match');
+  else if (k === 'i' || k === 'I') marcar('incerto');
+  else if (k === 'x' || k === 'X' || k === 'Backspace') { ev.preventDefault(); limparMarca(); }
+  else if (k === 'o' || k === 'O') { ev.preventDefault(); editarObs(); }
+  else if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'l' || k === 'j') { ev.preventDefault(); irPara(S.i + 1); }
+  else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'h' || k === 'k') { ev.preventDefault(); irPara(S.i - 1); }
+  else if (k === 'Home') irPara(0);
+  else if (k === 'End') irPara(S.rows.length - 1);
+  else if (k === 'Enter') { ev.preventDefault(); irProximo(); }
+});
+
+/* ---------- início ---------- */
+const emFrame = window.self !== window.top;
+$('compat').textContent = emFrame
+  ? 'Nesta página hospedada o navegador não deixa gravar no arquivo do projeto. Abra o CSV, anote e use "Baixar cópia" para devolver o arquivo a dados/processados/. Para gravar direto no arquivo, abra ferramentas/anotador_teste.html do projeto no Chrome ou no Edge.'
+  : (temFS ? '' : 'Este navegador não permite gravar direto no arquivo. Use o Chrome ou o Edge para o salvamento automático; aqui só dá para baixar uma cópia.');
+(async () => {
+  if (!temFS) return;
+  const h = await lerHandleGuardado(); if (!h) return;
+  const b = $('btnResume'); b.style.display = ''; b.textContent = 'Continuar com ' + h.name;
+  b.onclick = async () => {
+    try { if (!(await garantirPermissao(h))) { banner('Permissão de escrita negada.', 'err'); return; } await carregarHandle(h); }
+    catch (e) { banner('Não consegui reabrir ' + h.name + ': ' + e.message, 'err'); }
+  };
+})();
+window.__anotador = { S, carregarTexto, renderTudo };
+})();
+</script>
+</body>
+</html>

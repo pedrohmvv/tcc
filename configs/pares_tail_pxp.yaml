@@ -1,0 +1,37 @@
+# Pares da TAIL para o treino produto × produto (ADR-0013 item 5; ADR-0015; spec 001 RF8; bloco P5).
+# USO SOMENTE LOCAL: a autorização escrita da TAIL não existe (pendência C3) e nada derivado da TAIL
+# é versionado ou publicado. Decisões D1 a D6 do autor, aprovadas em 2026-11-16.
+seed: 42
+
+# D1. As variantes sem tamanho reconhecível (13.085 de 26.927 pares, medido em 2026-11-13) não têm
+# como ter o tamanho conferido, e entre as verificáveis 16,6% corrompem o tamanho. Ficam FORA por
+# padrão; ligar só para a ablação (a coluna `origem` permite comparar).
+incluir_sem_tamanho: false
+
+# D2. Título do benchmark da TAIL (2.267 títulos) é proibido no treino e na validação. O grupo
+# INTEIRO sai se algum título for idêntico (normalizado) ou tiver cosseno TF-IDF de palavras >= este
+# limiar com algum título do benchmark. Fixado ANTES de ver as contagens; nunca ajustar olhando o
+# resultado. As exclusões são reportadas.
+limiar_quase_duplicata: 0.9
+
+# D3. Sem holdout da TAIL: a validação é só o pool da ALTA (ADR-0015 item 4). Toda a TAIL vai para
+# o treino; o agrupamento serve para os negativos não cruzarem grupos (não há chave aqui).
+
+# D4. Os 19 grupos de nota fiscal têm 10 títulos cada (45 pares por grupo, 855 no total) e dominariam
+# o `tail_nf`: no máximo 10 pares por grupo (190). O número é uma proposta, sem base nos documentos.
+max_pares_por_grupo_nf: 10
+
+# D5. Negativos só com regra certa (tamanho diferente nos dois lados, protocolo §3.4), razão 1:1 com
+# os positivos, reaproveitando as faixas de cosseno da parte A. Nada minerado só por similaridade.
+razao_negativos: 1.0
+k: 20
+faixas_cosseno: [0.0, 0.3, 0.5, 0.7, 1.0]
+peso_negativos_por_faixa:
+  "[0.00, 0.30)": 1
+  "[0.30, 0.50)": 1
+  "[0.50, 0.70)": 1
+  "[0.70, 1.00]": 1
+teto_negativos_por_produto: 3
+
+# D6. A marca pode ter sido trocada pelo LLM nas variantes e isso NÃO é verificável: aceito e
+# declarado como limitação, com ablação por `origem` (nada a configurar aqui).
