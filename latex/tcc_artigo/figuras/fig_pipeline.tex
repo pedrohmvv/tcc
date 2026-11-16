@@ -12,12 +12,12 @@
 
 \node[box] (input) {Produto de entrada\\(descrição PDV)};
 \node[box, below=of input] (blocagem) {Blocagem lexical\\(TF-IDF / BM25)};
-\node[box, right=1.8cm of blocagem] (dicionario) {Dicionário canônico\\(\textasciitilde{}1.500 entradas)};
+\node[box, right=1.8cm of blocagem] (dicionario) {Dicionário canônico (secundária, \textasciitilde{}1.500 entradas) ou produtos de outras lojas (principal)};
 \node[decision, below=1.3cm of blocagem] (progressivo) {Pipeline progressivo: score do baseline lexical acima do limiar de confiança?};
 \node[box, below left=1.6cm and -0.9cm of progressivo] (aceita) {Aceita decisão do baseline lexical (barato, sem SLM)};
-\node[box, below right=1.6cm and -0.9cm of progressivo] (crossencoder) {Cross-Encoder fine-tuned (reranqueamento + decisão match / não-match)};
+\node[box, below right=1.6cm and -0.9cm of progressivo] (crossencoder) {Cross-Encoder fine-tuned, adaptador LoRA do tipo de par (reranqueamento + decisão match / não-match)};
 \node[box, below=3.6cm of progressivo] (decisao) {Decisão final: match / não-match};
-\node[wide, below=1.3cm of decisao] (comparacao) {Comparação experimental (Seção~\ref{sec:baselines-avaliacao}) --- mesmo conjunto de teste:\\TF-IDF, BM25, Levenshtein, Jaccard, embeddings genéricos, LLaMA 3.2 3B zero-shot\\$\rightarrow$ Precision, Recall, F1, MRR, Recall@K, teste de McNemar};
+\node[wide, below=1.3cm of decisao] (comparacao) {Comparação experimental (Seção~\ref{sec:baselines-avaliacao}) --- mesmo conjunto de teste, por fatia:\\TF-IDF, BM25, Levenshtein, Jaccard, embeddings genéricos, LLaMA 3.2 3B zero-shot\\$\rightarrow$ Precision, Recall, F1, MRR, Recall@K, teste de McNemar};
 
 \draw[arrow] (input.south) -- (blocagem.north);
 \draw[arrow] (dicionario.west) -- (blocagem.east);

@@ -1,0 +1,23 @@
+% Gerado automaticamente por scripts/03_construcao_dataset.py — não editar à mão.
+\begin{table}[htbp]
+\centering
+\caption{Recall da blocagem produto $\times$ produto isolada, por método e número de candidatos (k): por par positivo e por âncora com positivo}
+\label{tab:recall-blocagem-pxp}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{\textbf{TF-IDF}} & \multicolumn{2}{c}{\textbf{BM25}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+\textbf{k} & Pares & Âncoras & Pares & Âncoras \\
+\midrule
+1 & 32,1\% & 78,8\% & 30,9\% & 75,8\% \\
+5 & 74,1\% & 87,9\% & 80,2\% & 93,9\% \\
+10 & 92,6\% & 97,0\% & 92,6\% & 97,0\% \\
+20 & 93,8\% & 97,0\% & 95,1\% & 97,0\% \\
+50 & 96,3\% & 97,0\% & 97,5\% & 100,0\% \\
+100 & 100,0\% & 100,0\% & 98,8\% & 100,0\% \\
+\bottomrule
+\end{tabular}
+\vspace{2mm}
+\fonte{Elaborado pelo autor (pool cego entre lojas: 33 âncoras com positivo e 81 pares positivos; 42 âncoras sem positivo e 37 pares incertos, fora do cálculo). Recall é um limite superior: o mesmo SKU fora do pool não foi visto pelo autor}
+\end{table}

@@ -1,6 +1,6 @@
 # ADR-0005: Confiabilidade via teste-reteste intra-anotador (não Kappa inter-anotador)
 
-**Status:** Aceito
+**Status:** Aceito. **Emendado em dois itens (2026-11-16):** pelo **ADR-0016** (rascunho, "Proposto"), o intervalo de ≥ 7 dias não foi cumprido no reteste do teste produto × produto (39 minutos, desvio declarado); pelo **ADR-0018** (Aceito), os casos `incerto` também podem ser adjudicados pelo julgamento do autor, registrado como fonte distinta (`autor:` / `autor_adjudicacao`). O restante deste ADR (teste-reteste intra-anotador, ≥ 50% do teste, Kappa por tipo de par, faixa desejável ≥ 0,75, `incerto` não resolvido fora do teste final) não muda.
 
 ## Contexto
 Anotação conduzida por um único anotador (o autor). Cohen's Kappa clássico exige dois anotadores independentes — não calculável neste cenário.

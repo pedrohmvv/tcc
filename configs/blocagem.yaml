@@ -1,0 +1,10 @@
+# Config da blocagem produto × dicionário (ADR-0006, emenda de 2026-10-31; spec 001, RF1 "1a").
+# `metodo` e `k` congelados em 2026-10-31 a partir do recall da amostra cega (ADR-0006, emenda):
+# TF-IDF, k=20. Justificativa em docs/resultado_blocagem_amostra_cega.md.
+# Só mudar com novo registro; os pares do teste são gerados depois deste congelamento.
+seed: 42
+n_amostra: 50
+ks: [1, 5, 10, 20, 50, 100]
+metodos: [tfidf, bm25]
+metodo: tfidf
+k: 20

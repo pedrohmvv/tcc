@@ -10,7 +10,24 @@ scripts/04_baselines.py.
 Ver AGENTS.md, seção 3, camada 2.
 """
 
+import importlib.util
+import os
+
 import pandas as pd
+import pytest
+
+_ROOT = os.path.join(os.path.dirname(__file__), "..")
+
+
+def _load(filename: str):
+    path = os.path.join(_ROOT, "scripts", filename)
+    spec = importlib.util.spec_from_file_location(filename, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+eda = _load("02_analise_exploratoria.py")
 
 
 def test_produtos_brutos_exemplo_tem_colunas_do_schema_alta(
@@ -43,3 +60,208 @@ def test_par_nao_match_exemplo_referencia_entrada_diferente(
     produto_bruto_nao_match, entrada_nao_match = par_nao_match_exemplo
     assert produto_bruto_match == produto_bruto_nao_match
     assert entrada_match != entrada_nao_match
+
+
+def test_calcular_contagens_basicas_reproduz_numeros_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    contagens = eda.calcular_contagens_basicas(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+
+    assert contagens["total_registros"] == 4
+    assert contagens["total_entradas_dicionario"] == 2
+    assert contagens["product_id_distintos"] == 3
+    assert contagens["descricoes_distintas"] == 3
+    assert contagens["distribuicao_source"] == {
+        "ajuba_api": 2,
+        "diniz_api": 1,
+        "guedes_api": 1,
+    }
+    assert contagens["distribuicao_estado"] == {"PB": 2, "CE": 1, "PI": 1}
+    assert contagens["numero_estabelecimentos"] == 3
+    # "Arroz Branco Tio Joao 1kg" é a única descrição normalizada que aparece
+    # em mais de uma fonte (diniz_api e guedes_api), de 3 descrições distintas.
+    assert contagens["taxa_sobreposicao_lojas"] == pytest.approx(1 / 3)
+
+
+def test_caracterizar_ruido_pdv_reproduz_contagens_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    ruido = eda.caracterizar_ruido_pdv(produtos_brutos_variados_exemplo)
+
+    assert ruido == {
+        "unidade_colada": 4,
+        "caixa_alta": 0,
+        "sem_acentuacao": 3,
+        "abreviatura": 1,
+    }
+
+
+def test_caracterizar_match_score_reproduz_estatisticas_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    distribuicao = eda.caracterizar_match_score(produtos_brutos_variados_exemplo)
+
+    assert distribuicao["contagem"] == 4
+    assert distribuicao["media"] == pytest.approx(0.79)
+    assert distribuicao["minimo"] == pytest.approx(0.65)
+    assert distribuicao["maximo"] == pytest.approx(0.92)
+    assert distribuicao["mediana"] == pytest.approx(0.795)
+
+
+def test_comparar_comprimentos_reproduz_estatisticas_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    comparacao = eda.comparar_comprimentos(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+
+    assert comparacao["caracteres_bruto"]["mean"] == pytest.approx(29.5)
+    assert comparacao["caracteres_bruto"]["count"] == 4
+    assert comparacao["caracteres_dicionario"]["mean"] == pytest.approx(12.0)
+    assert comparacao["tokens_bruto"]["mean"] == pytest.approx(6.25)
+    assert comparacao["tokens_dicionario"]["mean"] == pytest.approx(2.0)
+
+
+def test_contar_ngramas_unigrama_reproduz_contagens_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.contar_ngramas(produtos_brutos_variados_exemplo, n=1, top_k=10)
+    por_ngrama = {linha["ngrama"]: linha for linha in resultado}
+
+    assert por_ngrama["AGUA"]["contagem"] == 2
+    assert por_ngrama["ARROZ"]["contagem"] == 2
+    # "Arroz Branco Tio Joao 1kg" tem unidade colada (1KG) e falta de acentuação (Joao).
+    assert "unidade colada" in por_ngrama["ARROZ"]["marca_ruido"]
+    assert "sem acentuação" in por_ngrama["ARROZ"]["marca_ruido"]
+    assert por_ngrama["ARROZ"]["exemplo"] == "Arroz Branco Tio Joao 1kg"
+
+
+def test_contar_ngramas_bigrama_reproduz_contagens_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.contar_ngramas(produtos_brutos_variados_exemplo, n=2, top_k=10)
+    por_ngrama = {linha["ngrama"]: linha for linha in resultado}
+
+    assert por_ngrama["AGUA MINERAL"]["contagem"] == 2
+    assert por_ngrama["ARROZ BRANCO"]["contagem"] == 2
+
+
+def test_medir_vocabulario_reproduz_estatisticas_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+    dicionario_canonico_exemplo: pd.DataFrame,
+) -> None:
+    vocabulario = eda.medir_vocabulario(
+        produtos_brutos_variados_exemplo, dicionario_canonico_exemplo
+    )
+
+    assert vocabulario["tipos_brutos"] == 18
+    assert vocabulario["tipos_normalizados"] == 16
+    assert vocabulario["hapax"] == 7
+    assert vocabulario["dis_legomena"] == 9
+    assert vocabulario["tokens_exclusivos_uma_loja"] == 11
+    assert vocabulario["tokens_exclusivos_uma_loja_freq_min2"] == 4
+    assert vocabulario["vocabulario_dicionario"] == 4
+    assert vocabulario["tokens_dicionario_presentes_na_base"] == 4
+    assert vocabulario["fracao_cobertura_dicionario"] == pytest.approx(1.0)
+    assert vocabulario["fracao_oov_bruto"] == pytest.approx(0.75)
+
+
+def test_calcular_jaccard_entre_lojas_reproduz_similaridade_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    matriz = eda.calcular_jaccard_entre_lojas(produtos_brutos_variados_exemplo)
+
+    assert matriz.loc["diniz_api", "guedes_api"] == pytest.approx(1.0)
+    assert matriz.loc["ajuba_api", "diniz_api"] == pytest.approx(0.0)
+    assert matriz.loc["ajuba_api", "ajuba_api"] == pytest.approx(1.0)
+
+
+def test_detectar_inversoes_de_ordem_identifica_grupo_com_tokens_reordenados(
+    produtos_brutos_inversao_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.detectar_inversoes_de_ordem(produtos_brutos_inversao_exemplo)
+
+    assert resultado["grupos_totais"] == 1
+    assert resultado["grupos_com_inversao_entre_lojas"] == 1
+    assert resultado["taxa_inversao_entre_lojas"] == pytest.approx(1.0)
+
+
+def test_detectar_inversoes_de_ordem_ignora_mesma_ordem(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    # "Arroz Branco Tio Joao 1kg" se repete com a MESMA ordem em duas lojas
+    # (diniz_api e guedes_api) — não é inversão, é a mesma descrição exata.
+    resultado = eda.detectar_inversoes_de_ordem(produtos_brutos_variados_exemplo)
+
+    assert resultado["grupos_com_inversao_entre_lojas"] == 0
+
+
+def test_contar_formas_de_unidade_reproduz_grafias_da_amostra(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    resultado = eda.contar_formas_de_unidade(produtos_brutos_variados_exemplo)
+    por_forma = {linha["forma"]: linha for linha in resultado}
+
+    assert por_forma["l"]["contagem"] == 2
+    assert por_forma["l"]["unidade_canonica"] == "litro"
+    assert por_forma["kg"]["contagem"] == 2
+    assert por_forma["kg"]["unidade_canonica"] == "quilograma"
+
+
+def test_selecionar_exemplos_ruido_abreviacao_usa_detector_existente(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_ruido(produtos_brutos_variados_exemplo, n_por_tipo=3)
+    abreviacao = [e for e in exemplos if e["tipo"] == "abreviação"]
+
+    assert len(abreviacao) == 1
+    assert abreviacao[0]["descricao_a"] == "Agua Mineral C/gas Grf Pet 1,5l Indaia"
+    assert abreviacao[0]["descricao_b"] == ""
+
+
+def test_selecionar_exemplos_ruido_tipografia_usa_detectores_existentes(
+    produtos_brutos_variados_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_ruido(produtos_brutos_variados_exemplo, n_por_tipo=3)
+    tipografia = [e["descricao_a"] for e in exemplos if e["tipo"] == "tipografia"]
+
+    # 3 das 4 linhas são "sem acentuação" (a 4a, "Água Mineral...", tem acento).
+    assert len(tipografia) == 3
+    assert set(tipografia) == {
+        "Agua Mineral C/gas Grf Pet 1,5l Indaia",
+        "Arroz Branco Tio Joao 1kg",
+    }
+
+
+def test_selecionar_exemplos_ruido_unidade_pareia_grafias_diferentes() -> None:
+    df = pd.DataFrame(
+        [
+            {"product_id": 1, "description": "Queijo Coalho 500G", "source": "a_api"},
+            {"product_id": 2, "description": "Queijo Coalho 500GR", "source": "b_api"},
+        ]
+    )
+    exemplos = eda.selecionar_exemplos_ruido(df, n_por_tipo=3)
+    unidade = [e for e in exemplos if e["tipo"] == "unidade"]
+
+    assert len(unidade) == 1
+    assert {unidade[0]["descricao_a"], unidade[0]["descricao_b"]} == {
+        "Queijo Coalho 500G",
+        "Queijo Coalho 500GR",
+    }
+
+
+def test_selecionar_exemplos_ruido_inversao_usa_pares_entre_lojas(
+    produtos_brutos_inversao_exemplo: pd.DataFrame,
+) -> None:
+    exemplos = eda.selecionar_exemplos_ruido(produtos_brutos_inversao_exemplo, n_por_tipo=3)
+    inversao = [e for e in exemplos if e["tipo"] == "inversão"]
+
+    assert len(inversao) == 1
+    assert {inversao[0]["descricao_a"], inversao[0]["descricao_b"]} == {
+        "Suco Uva Del Valle 1,5L",
+        "Suco Del Valle Uva 1,5l",
+    }

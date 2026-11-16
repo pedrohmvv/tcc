@@ -49,6 +49,61 @@
 
 ---
 
+### 📅 2026-10-31 — Análise de impacto da TAIL e decisões de escopo
+
+**Duração:** _sessão longa com agente_
+
+**O que fiz hoje:**
+- Pedi uma varredura somente leitura do repositório da TAIL (`invoice-data-normalizer/`) e do TCC. O relatório está em `docs/relatorio_impacto_tail.md`.
+- Decidi usar o cenário D: ALTA como domínio e teste principal; TAIL como treino extra de pares produto × produto e teste externo exploratório.
+- Defini duas regras de match por tipo de par (produto × dicionário: categoria e variante; produto × produto: SKU, com marca e tamanho). Kit/promoção e marca própria declarada no texto são não-match em produto × dicionário.
+- Escrevi o ADR-0013, revisei o protocolo de anotação, sincronizei specs 001–004, skills, regra do Cursor e `CLAUDE.md`. Criei a pauta do orientador e o rascunho do e-mail para a TAIL (não enviado).
+- Defini o plano da blocagem: amostra cega de ~50 produtos para medir o recall, varredura de k e congelamento do método antes de gerar os pares do teste (emenda ao ADR-0006).
+
+**Decisões tomadas:**
+- Dois adaptadores LoRA, um por tipo de par (contra a recomendação de modelo único do relatório).
+- Dataset Generator da Dharma suspenso (D-5). Sem segundo anotador da TAIL (D-6).
+- Aval do orientador **informado por mim, ainda não formalizado**. Autorização da TAIL **verbal, ainda não escrita**.
+
+**Dificuldades / Impasses:**
+- **[RISCO]** O cronograma da proposta está atrasado: blocagem, anotação, partição e treino não iniciados. A anotação é o caminho crítico.
+- **[RISCO]** Sem o Generator, não há fonte planejada de pares de treino produto × dicionário (a supervisão distante por "marca + unidade" não funciona num dicionário sem marca nem tamanho).
+- **[ACHADO]** O benchmark da TAIL tem 30 positivos (12 de 3 famílias de produto) e duas versões dos rótulos que divergem em 4 linhas.
+- **[RISCO]** Marca própria só é reconhecida quando o texto declara: marca própria sem sinal no texto vira limitação a declarar no TCC.
+
+**Próximos passos:**
+- [ ] Marcar a reunião com o orientador e enviar o e-mail à TAIL.
+- [ ] Blocagem 1.2a (testes primeiro), amostra cega e recall.
+- [ ] Decidir a D-5 (Generator) antes da tarefa 1.7 e a D-13 (tamanho do teste produto × produto).
+- [ ] Editar o `main.tex` só depois do aval formal do orientador.
+
+---
+
+### 📅 2026-10-31 — Blocagem 1.2a e inversão das fatias (ADR-0014)
+
+**Duração:** _sessão longa com agente_
+
+**O que fiz hoje:**
+- Implementei a blocagem produto × dicionário no script 03 (TF-IDF e BM25, varredura de k, deduplicação por texto normalizado, amostra cega), com testes primeiro e `make check` verde.
+- Anotei a amostra cega (50 produtos) e medi o recall: TF-IDF supera ou empata com o BM25 em todos os k; teto de 90,5% (4 de 42 produtos não são recuperados em nenhum k). Congelei TF-IDF e k=20 em `configs/blocagem.yaml` e registrei em `docs/resultado_blocagem_amostra_cega.md`.
+- Decidi tornar produto × produto a fatia principal, com produto × dicionário como secundária (ADR-0014), e propaguei a mudança para a documentação (exceto o `main.tex`).
+
+**Decisões tomadas:**
+- TF-IDF, k=20 (alternativa considerada: k=50).
+- ADR-0014: produto × produto é a fatia e o teste principais; produto × dicionário permanece como fatia secundária completa, com teste menor.
+
+**Dificuldades / Impasses:**
+- **[ACHADO]** 1.959 dos 28.240 produtos (6,9%) ficam sem nenhum candidato com TF-IDF e k=20. Parte é não-alimento; parte é abreviação (`VH`, `VIN`, `ESP`). A proporção de cada grupo não foi medida.
+- **[RISCO]** O ADR-0007 rejeitara "duas avaliações completas e independentes" por custo de anotação e de blocagem sem dicionário; o ADR-0014 as retoma, com o dicionário em tamanho menor. O custo de anotação migra em parte para produto × produto.
+- **[RISCO]** A blocagem entre produtos ainda não foi medida; se não for melhor que a produto × dicionário, o argumento do ADR-0014 enfraquece.
+
+**Próximos passos:**
+- [ ] Desenhar a 1.2b: como medir o recall da blocagem entre produtos (sem dicionário e sem `codg_item`).
+- [ ] Decidir os tamanhos dos testes por fatia (D-13 e o teste produto × dicionário).
+- [ ] Atualizar o `main.tex` (tarefa 5.3) com a nova hipótese central.
+
+---
+
 ### 📅 AAAA-MM-DD — _Próxima entrada..._
 
 _Copie o bloco acima e continue adicionando entradas._

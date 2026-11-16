@@ -20,13 +20,13 @@
 \endlastfoot
 
 1 & Análise exploratória da base; definição do protocolo de anotação & Estatísticas descritivas documentadas; protocolo escrito \\
-2 & Geração de candidatos (heurística + supervisão distante) e configuração da geração de treino & Pipeline de \textit{bootstrapping} funcional \\
-3--5 & Anotação manual do conjunto de teste padrão-ouro (\textasciitilde{}300--500 pares) e teste-reteste \newline \textit{Redação: Introdução} & Conjunto de teste anotado; Kappa intra-anotador calculado \\
-6 & Partição anti-vazamento (por produto canônico) e aumentação sintética do treino \newline \textit{Redação: Revisão de Literatura} & Partições versionadas; conjunto de treino gerado \\
+2 & Geração de candidatos (blocagem produto--dicionário e produto--produto; supervisão distante) e configuração do treino & Pipeline de \textit{bootstrapping} funcional \\
+3--5 & Anotação manual do conjunto de teste padrão-ouro (fatias produto--produto e produto--dicionário) e teste-reteste \newline \textit{Redação: Introdução} & Conjunto de teste anotado; Kappa intra-anotador calculado \\
+6 & Partição anti-vazamento (nenhum produto em mais de uma partição) e aumentação sintética do treino \newline \textit{Redação: Revisão de Literatura} & Partições versionadas; conjunto de treino gerado \\
 7--8 & Implementação e avaliação dos baselines clássicos \newline \textit{Redação: Metodologia} & Tabela de baselines fechada; harness reproduzível; checkpoint: $\geq$60\% do TCC redigido \\
-9 & Configuração do SLM (LoRA bf16), formatação dos pares, seeds e configs & Pipeline de treino executa de ponta a ponta \\
+9 & Configuração do SLM (dois adaptadores LoRA bf16), formatação dos pares, seeds e configs & Pipeline de treino executa de ponta a ponta \\
 10--11 & Fine-tuning, ajuste de hiperparâmetros e mineração de negativos difíceis & Modelo treinado; curvas de treino registradas \\
-12 & Avaliação do modelo vs. baselines; teste de significância estatística & Tabela comparativa; hipótese central testada \\
+12 & Avaliação do modelo vs. baselines, por fatia; teste de significância estatística & Tabela comparativa; hipótese central testada \\
 13 & Ablação enxuta (aumentação; negativos difíceis); análise de pipeline progressivo & Dois estudos de ablação documentados; economia computacional do pipeline progressivo quantificada \\
 14 & Análise de erro qualitativa por tipo de ruído & Taxonomia de erros e exemplos \\
 15 & Redação de Resultados, Discussão e Conclusão; entrega de rascunho completo ao orientador no início da semana & Rascunho completo entregue; retorno do orientador obtido até o final da semana \\

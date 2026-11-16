@@ -87,11 +87,11 @@ pipeline: coleta eda construir-dataset baselines finetuning avaliar ## 🚀  Exe
 	@echo ""
 
 .PHONY: coleta
-coleta: ## 📥  01 — Carrega base ALTA + dicionário canônico
+coleta: ## 📥  01 — Valida brutos ALTA e grava a base limpa (ADR-0012)
 	@echo ""
 	@echo "  $(BOLD)$(MAGENTA)📥  Etapa 01 · Carregando dados brutos...$(RESET)"
 	$(PYTHON) $(SCRIPTS)/01_coleta_dados.py
-	@echo "  $(GREEN)✅  Dados brutos validados em dados/brutos/$(RESET)"
+	@echo "  $(GREEN)✅  Brutos validados; base limpa em dados/processados/$(RESET)"
 	@echo ""
 
 .PHONY: eda
@@ -237,10 +237,11 @@ new-doc: ## ✨  Cria um novo tipo de documento — use TYPE=nome
 # =============================================================================
 
 .PHONY: lint
-lint: ## 🔎  Verifica estilo do código (ruff check)
+lint: ## 🔎  Verifica estilo do código (ruff check + ruff format --check, mesmo do CI)
 	@echo ""
 	@echo "  $(BOLD)$(CYAN)🔎  Analisando estilo do código...$(RESET)"
 	uv run ruff check $(SCRIPTS)/ tests/
+	uv run ruff format --check $(SCRIPTS)/ tests/
 	@echo "  $(GREEN)✅  Código aprovado pelo linter!$(RESET)"
 	@echo ""
 
