@@ -84,6 +84,8 @@ Não há mais pendência sobre a granularidade do dicionário: ela foi confirmad
 
 Quando a informação disponível não permite decidir com confiança (ex.: descrição incompleta que omite variante relevante, marca regional desconhecida sem correspondência clara no dicionário), o par recebe rótulo transitório `incerto` e é adjudicado por consulta ao dicionário canônico oficial ou, quando necessário, aos pesquisadores do projeto ALTA. Pares `incerto` não resolvidos **não integram** o conjunto de teste final.
 
+**Adjudicação pelo autor (`autor:`) — emenda de 2026-11-16 (ADR-0018).** Quando a consulta ao dicionário ou aos pesquisadores do ALTA não for feita ou não resolver, o autor pode decidir o par pelo próprio julgamento, registrando na observação da planilha de adjudicação o prefixo `autor:` e o raciocínio. Esses pares entram no teste final com a fonte `autor_adjudicacao` e devem ser reportados à parte (desempenho com e sem eles). Informação ausente na descrição **continua** sendo motivo para manter `incerto`: o prefixo `autor:` não autoriza tratar a ausência de informação como `nao_match`.
+
 **`sem_entrada` (só na amostra cega, Seção 2.1):** o produto é descrito de forma clara, mas nenhuma entrada do dicionário serve (por exemplo, a categoria não existe no dicionário, ou é marca própria declarada, que não casa com entrada genérica). É diferente de `incerto`: o produto está claro, quem falta é a entrada. Esses produtos ficam fora do cálculo do recall e são contados à parte, o que também mostra a cobertura do dicionário.
 
 ## 4. Procedimento de confiabilidade (teste-reteste)
